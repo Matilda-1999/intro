@@ -183,6 +183,7 @@
       let resTextIdx = 0;
       let currentResArray = [];
       let isShowingResult = false;
+      let finalEncStep = 0;
 
       const scenario = [
         {
@@ -408,6 +409,7 @@
         textIdx = prevState.textIdx;
         resTextIdx = prevState.resTextIdx;
         isShowingResult = prevState.isShowingResult;
+        finalEncStep = prevState.finalEncStep;
         document.getElementById("back-button").style.display =
           historyStack.length > 0 ? "block" : "none";
         document.getElementById("main-window").style.background = "#121212";
@@ -507,6 +509,7 @@
             currentIdx++;
             textIdx = 0;
             resTextIdx = 0;
+            finalEncStep = 0;
             isShowingResult = false;
             render();
           };
@@ -523,6 +526,8 @@
         const isRec = stats.rec >= stats.pav;
         const isRad = stats.rad >= stats.mod;
 
+        const subtitle = "— 당신이 어디에 있어야 하는지 알게 되는 순간, 도시는 더 이상 낯설지 않다. 그렇다고 익숙해지는 건 아니지만.";
+        
         let encounterLines = isRec
           ? [
               "오후 해는 이미 기울었지만 거리는 아직도 소란합니다. 노면 전차가 천천히 지나가고, 가스등 위에 앉은 새는 꼬리를 털어냅니다. 하얀 먼지가 흩날리고, 모퉁이에 오래된 책방처럼 보이는 가게가 있습니다. 누군가 당신이 오기를 기다리기라도 한 것처럼 문을 열고 나오네요. 모자챙 아래 그림자 속에서도 여인의 눈동자는 정확히 초점을 맞춥니다.",
@@ -550,7 +555,8 @@
             btn.className = "choice-btn next-btn";
             btn.innerText = "다음 [▶]";
             btn.onclick = () => {
-              step++;
+              finalEncStep++;
+              saveState();
               showEnc();
             };
             container.appendChild(btn);
@@ -614,7 +620,10 @@
           };
         } else {
           btn.innerText = "종막으로 [▶]";
-          btn.onclick = showFinalMirror;
+          btn.onclick = () => {
+            saveState();
+            showFinalMirror();
+          };
         }
         container.appendChild(btn);
       }
@@ -651,6 +660,7 @@
             btn.className = "choice-btn next-btn";
             btn.innerText = "다음 [▶]";
             btn.onclick = () => {
+              saveState(); // 거울의 다음 대사로 가기 전 저장!
               mStep++;
               stepM();
             };
