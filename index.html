@@ -744,21 +744,21 @@
           ? "혼돈을 해체하는 철혈의 관리자"
           : "상식의 댐을 수호하는 파수꾼";
 
-        display.innerHTML = `
-        <div id="final-report-area" class="fade-in" style="border: 1px solid #a5d6a7; padding: 30px; background-color: #111111; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
-            <div style="color: #a5d6a7 !important; font-size: 1.1em; font-weight: bold; margin-bottom: 18px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 12px; letter-spacing: 2px;">
+       display.innerHTML = `
+        <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 30px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
+            <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 15px; letter-spacing: 2px;">
                 [ 레치타티보의 순간: 최종 성향 진단서 ]
             </div>
-            <div style="margin-bottom: 18px; background-color: #1a1a1a; padding: 15px; border-left: 4px solid #a5d6a7; text-align: center;">
-                <div style="font-weight: bold; color: #a5d6a7 !important; font-size: 1.1em;">"${identity}"</div>
+            <div style="margin-bottom: 15px; background-color: #1a1a1a !important; padding: 15px; border-left: 5px solid #a5d6a7 !important; text-align: center;">
+                <div style="font-weight: bold; color: #a5d6a7 !important; font-size: 1.15em;">"${identity}"</div>
             </div>
-            <div style="margin-bottom: 15px; font-size: 0.95em; line-height: 1.7; color: #ffffff !important;">
-                <span style="color: #bbbbbb !important;">소속:</span> ${f}<br>
-                <span style="color: #bbbbbb !important;">성향:</span> ${t}
+            <div style="margin-bottom: 20px; font-size: 1em; line-height: 1.8; color: #ffffff !important;">
+                <span style="color: #999999 !important; font-weight: bold;">소속:</span> <span style="color: #ffffff !important;">${f}</span><br>
+                <span style="color: #999999 !important; font-weight: bold;">성향:</span> <span style="color: #ffffff !important;">${t}</span>
             </div>
-            <div style="border-top: 1px solid #333; padding-top: 15px;">
-                <div style="font-weight: bold; margin-bottom: 8px; font-size: 0.85em; color: #bbbbbb !important;">내재화된 생각의 파편들:</div>
-                <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.6; word-break: keep-all;">${stats.logHistory.join(' / ')}</div>
+            <div style="border-top: 1px solid #444; padding-top: 15px;">
+                <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: #999999 !important;">내재화된 생각의 파편들:</div>
+                <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(' / ')}</div>
             </div>
         </div>`;
 
