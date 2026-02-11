@@ -404,9 +404,9 @@
 
       function goBack() {
         if (historyStack.length === 0) return;
-        
+
         const prevState = historyStack.pop();
-        
+
         // 1. 데이터 복구
         stats = prevState.stats;
         currentIdx = prevState.currentIdx;
@@ -414,15 +414,15 @@
         resTextIdx = prevState.resTextIdx;
         isShowingResult = prevState.isShowingResult;
         finalEncStep = prevState.finalEncStep;
-      
+
         // 2. UI 초기화
         document.getElementById("back-button").style.display =
           historyStack.length > 0 ? "block" : "none";
         document.getElementById("main-window").style.background = "#121212";
         document.getElementById("chapter-header").style.display = "block";
-        
+
         refreshLog();
-      
+
         // 3. 현재 상태에 맞는 화면 다시 그리기
         if (currentIdx < scenario.length) {
           if (isShowingResult) {
@@ -546,8 +546,9 @@
         const isRec = stats.rec >= stats.pav;
         const isRad = stats.rad >= stats.mod;
 
-        const subtitle = "— 당신이 어디에 있어야 하는지 알게 되는 순간, 도시는 더 이상 낯설지 않다. 그렇다고 익숙해지는 건 아니지만.";
-        
+        const subtitle =
+          "— 당신이 어디에 있어야 하는지 알게 되는 순간, 도시는 더 이상 낯설지 않다. 그렇다고 익숙해지는 건 아니지만.";
+
         let encounterLines = isRec
           ? [
               subtitle,
@@ -665,7 +666,7 @@
           : "상식의 댐을 수호하는 파수꾼";
 
         const orderedHistory = stats.mirrorHistory.slice().reverse();
-        
+
         const mLines = [
           "\n\n 하지만 당신이 정작 잉크병에 손을 뻗는 순간, 주변의 소음이 멀어지고 세상은 흑백으로 점멸합니다. 당신의 머릿속에서 가장 시끄러웠던 목소리들이 일제히 입을 다물고, 단 하나의 목소리만이 당신의 심장박동을 타고 흐릅니다.",
           `???: 잠깐. 정말로 이게 네가 원했던 결말인가? ${identity}(으)로 사는 것.`,
@@ -713,13 +714,26 @@
         const container = document.getElementById("choice-container");
         container.innerHTML = "";
         document.getElementById("main-window").style.background = "#000";
-        const isRec = stats.rec >= stats.pav;
-        const eText = `그게 당신의 선택이라면.\n\n이 짧은 내면의 대화가 끝난 뒤, 다시 리옹역의 시계 소리가 들리고 안개가 당신을 덮칩니다.\n\n${
-          isRec
-            ? "안개 속으로 사라지는 그녀를 보는 당신의 등 뒤로, 리옹역의 거대한 시계 소리가 들려옵니다."
-            : "고양이가 사뿐히 떠난 후 당신은 다시 홀로 남겨진 광장에서 자신의 코트 주머니를 움켜쥡니다."
-        } 멈춰 있던 시계탑이 육중한 소리를 내며 11 시 19 분으로 넘어갑니다. 그리고, 가로등이 한 번 깜빡이다가 완전히 꺼집니다. 당신의 머릿속 가장 깊은 방 안에서 잉크 냄새 섞인 재가 고요히 가라앉고 있습니다.\n\n마침내 당신이라는 고독한 이물질을 기꺼이 삼켜 버린 이 거대한 도시의 경첩은, 운명의 신이 내리는 판결문처럼 천천히, 그리고 엄숙하게 닫힙니다.\n\n그리하여 아무도 당신을 묻지 않는 이 도시, 1890 년의 파리가 당신을 모른 채로 남아 있더라도, 당신은 제자리에 섭니다.`;
+
+        // 1. 점수 비교를 통한 전용 텍스트 할당
+        let sideText = "";
+        if (stats.rec > stats.pav) {
+          sideText =
+            "안개 속으로 사라지는 그녀를 보는 당신의 등 뒤로, 리옹역의 거대한 시계 소리가 들려옵니다.";
+        } else if (stats.pav > stats.rec) {
+          sideText =
+            "고양이가 사뿐히 떠난 후 당신은 다시 홀로 남겨진 광장에서 자신의 코트 주머니를 움켜쥡니다.";
+        } else {
+          // 재단과 재건의 점수가 같을 때 (동률)
+          sideText =
+            "당신은 누구의 편도 아닌 채 텅 빈 광장에 홀로 서 있습니다.";
+        }
+
+        // 2. 결정된 sideText를 삽입하여 전체 문장 완성
+        const eText = `그게 당신의 선택이라면.\n\n이 짧은 내면의 대화가 끝난 뒤, 다시 리옹역의 시계 소리가 들리고 안개가 당신을 덮칩니다.\n\n${sideText} 멈춰 있던 시계탑이 육중한 소리를 내며 11 시 19 분으로 넘어갑니다. 그리고, 가로등이 한 번 깜빡이다가 완전히 꺼집니다. 당신의 머릿속 가장 깊은 방 안에서 잉크 냄새 섞인 재가 고요히 가라앉고 있습니다.\n\n마침내 당신이라는 고독한 이물질을 기꺼이 삼켜 버린 이 거대한 도시의 경첩은, 운명의 신이 내리는 판결문처럼 천천히, 그리고 엄숙하게 닫힙니다.\n\n그리하여 아무도 당신을 묻지 않는 이 도시, 1890 년의 파리가 당신을 모른 채로 남아 있더라도, 당신은 제자리에 섭니다.`;
+
         display.innerText = eText;
+
         const resBtn = document.createElement("button");
         resBtn.className = "choice-btn next-btn";
         resBtn.innerText = "최종 성향 진단서 [▶]";
@@ -732,19 +746,42 @@
         const container = document.getElementById("choice-container");
         container.innerHTML = "";
 
-        const isRec = stats.rec >= stats.pav;
-        const isRad = stats.rad >= stats.mod;
-        const f = isRec ? "재건의 손" : "성 파블로프 재단";
-        const t = isRad ? "급진적" : "온건적";
-        let identity = isRec
-          ? isRad
-            ? "파괴를 통한 정화의 집행관"
-            : "침묵하는 진실의 증언자"
-          : isRad
-          ? "혼돈을 해체하는 철혈의 관리자"
-          : "상식의 댐을 수호하는 파수꾼";
+        let f, t, identity;
 
-       display.innerHTML = `
+        // 1. 소속 판정 (f): 동률일 경우 보류 처리
+        if (stats.rec > stats.pav) {
+          f = "재건의 손";
+        } else if (stats.pav > stats.rec) {
+          f = "성 파블로프 재단";
+        } else {
+          f = "판단 보류(중립)";
+        }
+
+        // 2. 성향 판정 (t): 동률일 경우 보류 처리
+        if (stats.rad > stats.mod) {
+          t = "급진적";
+        } else if (stats.mod > stats.rad) {
+          t = "온건적";
+        } else {
+          t = "판단 보류(균형)";
+        }
+
+        // 3. 정체성(Identity) 매트릭스 세분화
+        if (f === "재건의 손") {
+          if (t === "급진적") identity = "파괴를 통한 정화의 집행관";
+          else if (t === "온건적") identity = "침묵하는 진실의 증언자";
+          else identity = "기록과 기억 사이의 재건자";
+        } else if (f === "성 파블로프 재단") {
+          if (t === "급진적") identity = "혼돈을 해체하는 철혈의 관리자";
+          else if (t === "온건적") identity = "상식의 댐을 수호하는 파수꾼";
+          else identity = "질서를 고수하는 재단의 중재자";
+        } else {
+          if (t === "급진적") identity = "경계를 허무는 자유의 선동가";
+          else if (t === "온건적") identity = "안개를 헤매는 고독한 철학자";
+          else identity = "심연을 응시하는 객관적 관찰자";
+        }
+
+        display.innerHTML = `
         <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 30px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
             <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 15px; letter-spacing: 2px;">
                 [ 레치타티보의 순간: 최종 성향 진단서 ]
@@ -758,7 +795,9 @@
             </div>
             <div style="border-top: 1px solid #444; padding-top: 15px;">
                 <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: #999999 !important;">내재화된 생각의 파편들:</div>
-                <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(' / ')}</div>
+                <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(
+                  " / "
+                )}</div>
             </div>
         </div>`;
 
@@ -781,8 +820,8 @@
             width: reportArea.offsetWidth,
             height: reportArea.offsetHeight,
             onclone: (clonedDoc) => {
-                clonedDoc.getElementById('final-report-area').style.opacity = "1";
-            }
+              clonedDoc.getElementById("final-report-area").style.opacity = "1";
+            },
           }).then((canvas) => {
             try {
               const link = document.createElement("a");
