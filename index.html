@@ -749,25 +749,16 @@
 
         let f, t, identity;
 
-        // 1. 소속 판정 (f): 동률일 경우 보류 처리
-        if (stats.rec > stats.pav) {
-          f = "재건의 손";
-        } else if (stats.pav > stats.rec) {
-          f = "성 파블로프 재단";
-        } else {
-          f = "판단 보류(중립)";
-        }
+        // 1. 소속 및 성향 판정
+        if (stats.rec > stats.pav) f = "재건의 손";
+        else if (stats.pav > stats.rec) f = "성 파블로프 재단";
+        else f = "판단 보류(중립)";
 
-        // 2. 성향 판정 (t): 동률일 경우 보류 처리
-        if (stats.rad > stats.mod) {
-          t = "급진적";
-        } else if (stats.mod > stats.rad) {
-          t = "온건적";
-        } else {
-          t = "판단 보류(균형)";
-        }
+        if (stats.rad > stats.mod) t = "급진적";
+        else if (stats.mod > stats.rad) t = "온건적";
+        else t = "판단 보류(균형)";
 
-        // 3. 정체성(Identity) 매트릭스 세분화
+        // 2. 정체성 매트릭스 (기존 로직 유지)
         if (f === "재건의 손") {
           if (t === "급진적") identity = "파괴를 통한 정화의 집행관";
           else if (t === "온건적") identity = "침묵하는 진실의 증언자";
@@ -782,25 +773,43 @@
           else identity = "심연을 응시하는 객관적 관찰자";
         }
 
+        // 3. 전향 가능성 지수 산출
+        // 최대 발생 가능 점수 차이는 7점
+        const maxMargin = 7;
+        const currentMargin = Math.abs(stats.rec - stats.pav);
+        const convertibility = Math.floor(
+          (1 - currentMargin / maxMargin) * 100
+        );
+
+        // 4. 지수에 따른 서사적 설명 부여
+        let convComment = "";
+        if (convertibility >= 85) convComment = "유연한 경계인";
+        else if (convertibility >= 50) convComment = "합리적 회의주의자";
+        else if (convertibility >= 20) convComment = "확신에 찬 행동가";
+        else convComment = "타협 없는 근본주의자";
+
         display.innerHTML = `
-        <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 30px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
-            <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 15px; letter-spacing: 2px;">
-                [ 레치타티보의 순간: 최종 성향 진단서 ]
-            </div>
-            <div style="margin-bottom: 15px; background-color: #1a1a1a !important; padding: 15px; border-left: 5px solid #a5d6a7 !important; text-align: center;">
-                <div style="font-weight: bold; color: #a5d6a7 !important; font-size: 1.15em;">"${identity}"</div>
-            </div>
-            <div style="margin-bottom: 20px; font-size: 1em; line-height: 1.8; color: #ffffff !important;">
-                <span style="color: #999999 !important; font-weight: bold;">소속:</span> <span style="color: #ffffff !important;">${f}</span><br>
-                <span style="color: #999999 !important; font-weight: bold;">성향:</span> <span style="color: #ffffff !important;">${t}</span>
-            </div>
-            <div style="border-top: 1px solid #444; padding-top: 15px;">
-                <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: #999999 !important;">내재화된 생각의 파편들:</div>
-                <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(
-                  " / "
-                )}</div>
-            </div>
-        </div>`;
+    <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 30px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
+        <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 15px; letter-spacing: 2px;">
+            [ 레치타티보의 순간: 최종 성향 진단서 ]
+        </div>
+        <div style="margin-bottom: 15px; background-color: #1a1a1a !important; padding: 15px; border-left: 5px solid #a5d6a7 !important; text-align: center;">
+            <div style="font-weight: bold; color: #a5d6a7 !important; font-size: 1.15em;">"${identity}"</div>
+        </div>
+        <div style="margin-bottom: 20px; font-size: 1em; line-height: 1.8; color: #ffffff !important;">
+            <span style="color: #999999 !important; font-weight: bold;">소속:</span> <span style="color: #ffffff !important;">${f}</span><br>
+            <span style="color: #999999 !important; font-weight: bold;">성향:</span> <span style="color: #ffffff !important;">${t}</span><br>
+            <span style="color: #999999 !important; font-weight: bold;">전향 가능성:</span> 
+            <span style="color: #a5d6a7 !important;">${convertibility}%</span> 
+            <span style="font-size: 0.85em; color: #777;">(${convComment})</span>
+        </div>
+        <div style="border-top: 1px solid #444; padding-top: 15px;">
+            <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: #999999 !important;">내재화된 생각의 파편들:</div>
+            <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(
+              " / "
+            )}</div>
+        </div>
+    </div>`;
 
         container.innerHTML = `
             <button class="choice-btn next-btn" style="margin-top: 20px; background: #a5d6a7; color: #000; padding: 15px; font-size: 0.95em;" onclick="saveAsImage()">결과 이미지 저장 [↓]</button>
