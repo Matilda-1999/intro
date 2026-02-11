@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <title>1890, 파리에서</title>
+    <title>1890년, 당신의 파리</title>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap");
       :root {
@@ -724,37 +724,35 @@
           : "상식의 댐을 수호하는 파수꾼";
 
         display.innerHTML = `
-        <div id="final-report-area" class="fade-in" style="border: 1px solid var(--accent); padding: 30px; background: #111; color: #d1d1d1; font-family: 'Nanum+Myeongjo', serif;">
-            <div style="color: var(--accent); font-size: 1.4em; font-weight: bold; margin-bottom: 25px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px;">
-                [ 1890 파리: 최종 성향 진단서 ]
+        <div id="final-report-area" class="fade-in" style="border: 1px solid var(--accent); padding: 25px; background: #111; color: #d1d1d1; font-family: 'Nanum+Myeongjo', serif; max-width: 500px; margin: 0 auto;">
+            <div style="color: var(--accent); font-size: 1.1em; font-weight: bold; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px; letter-spacing: 2px;">
+                [ 레치타티보의 순간: 최종 성향 진단서 ]
             </div>
-            <div style="margin-bottom: 25px; background: #1a1a1a; padding: 15px; border-left: 4px solid var(--accent);">
-                <div style="font-weight: bold; color: var(--accent); margin-bottom: 5px; font-size: 1.1em;">"${identity}"</div>
+            <div style="margin-bottom: 15px; background: #1a1a1a; padding: 12px; border-left: 3px solid var(--accent); text-align: center;">
+                <div style="font-weight: bold; color: var(--accent); font-size: 1.05em;">"${identity}"</div>
             </div>
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 12px; font-size: 0.9em; line-height: 1.6;">
                 <span style="color: var(--dim);">소속:</span> ${f}<br>
                 <span style="color: var(--dim);">성향:</span> ${t}
             </div>
-            <div style="border-top: 1px solid #333; padding-top: 15px;">
-                <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.85em; color: var(--dim);">내재화된 생각의 파편들:</div>
-                <div style="color: #888; font-size: 0.8em; font-style: italic;">${stats.logHistory.join(
-                  " / "
-                )}</div>
+            <div style="border-top: 1px solid #333; padding-top: 12px;">
+                <div style="font-weight: bold; margin-bottom: 6px; font-size: 0.8em; color: var(--dim);">내재화된 생각의 파편들 :</div>
+                <div style="color: #888; font-size: 0.75em; font-style: italic; line-height: 1.5;">${stats.logHistory.join(' / ')}</div>
             </div>
         </div>`;
 
-        container.innerHTML = `
-        <button class="choice-btn next-btn" style="margin-top: 20px; background: var(--accent); color: #000;" onclick="saveAsImage()">이 결과를 이미지로 저장하기[↓]</button>
-        <button class="choice-btn next-btn" style="margin-top: 10px;" onclick="location.reload()">새로운 여정 시작</button>
+    container.innerHTML = `
+        <button class="choice-btn next-btn" style="margin-top: 15px; background: var(--accent); color: #000; padding: 12px; font-size: 0.9em;" onclick="saveAsImage()">결과 이미지 저장 [↓]</button>
+        <button class="choice-btn next-btn" style="margin-top: 8px; padding: 10px; font-size: 0.85em;" onclick="location.reload()">새로운 여정 시작</button>
     `;
-      }
+}
 
       function saveAsImage() {
         const reportArea = document.querySelector("#final-report-area");
 
         html2canvas(reportArea, {
-          backgroundColor: "#111", // 배경색 유지
-          scale: 2, // 고해상도로 저장
+          backgroundColor: "#111",
+          scale: 2,
         }).then((canvas) => {
           const link = document.createElement("a");
           link.download = `1890_Paris_Archive_${new Date().getTime()}.png`;
