@@ -10,6 +10,7 @@
         --txt: #d1d1d1;
         --accent: #a5d6a7;
         --dim: #777;
+        --border: #333;
       }
       body {
         background: var(--bg);
@@ -23,29 +24,30 @@
         overflow: hidden;
       }
       #game-wrapper {
-        width: 90%;
-        max-width: 900px;
+        width: 95%;
+        max-width: 1100px;
         display: grid;
-        grid-template-columns: 1fr 280px;
+        grid-template-columns: 1fr 320px;
         gap: 20px;
-        height: 85vh;
+        height: 90vh;
       }
       #main-window {
         background: #121212;
-        border: 1px solid #222;
+        border: 1px solid var(--border);
         padding: 50px;
         display: flex;
         flex-direction: column;
         position: relative;
         overflow-y: auto;
       }
-      #log-window {
-        background: #050505;
-        border: 1px solid #222;
-        padding: 20px;
+      #chapter-header {
         font-size: 0.85em;
-        color: #666;
-        overflow-y: auto;
+        color: var(--accent);
+        letter-spacing: 3px;
+        margin-bottom: 25px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 10px;
+        text-transform: uppercase;
       }
       #text-display {
         font-size: 1.15em;
@@ -53,24 +55,31 @@
         flex-grow: 1;
         white-space: pre-wrap;
         margin-bottom: 30px;
+        user-select: text;
       }
-      .thought-pause {
-        color: var(--dim);
-        font-style: italic;
-        margin: 15px 0;
-        display: block;
+      #log-window {
+        background: #050505;
+        border: 1px solid var(--border);
+        padding: 20px;
+        font-size: 0.85em;
+        color: #666;
+        overflow-y: auto;
+        user-select: text;
       }
       .choice-btn {
         background: none;
         border: 1px solid #444;
         color: #aaa;
-        padding: 15px 20px;
-        cursor: pointer;
-        font-family: inherit;
-        transition: 0.3s;
-        width: 100%;
-        margin-bottom: 10px;
+        padding: 18px 20px;
+        margin-bottom: 12px;
         text-align: left;
+        width: 100%;
+        font-family: inherit;
+        font-size: 1em;
+        cursor: pointer;
+        transition: 0.3s;
+        display: block;
+        user-select: text !important;
       }
       .choice-btn:hover {
         background: #1a1a1a;
@@ -83,8 +92,28 @@
         font-weight: bold;
         border-color: #555;
       }
+      .back-btn {
+        background: none;
+        border: 1px dotted #555;
+        color: #666;
+        padding: 8px;
+        font-size: 0.85em;
+        cursor: pointer;
+        width: 100px;
+        transition: 0.3s;
+      }
+      .back-btn:hover {
+        color: #888;
+        border-color: #888;
+      }
+      .thought-pause {
+        color: var(--dim);
+        font-style: italic;
+        margin: 15px 0;
+        display: block;
+      }
       .fade-in {
-        animation: fadeIn 1s forwards;
+        animation: fadeIn 0.8s forwards;
       }
       @keyframes fadeIn {
         from {
@@ -100,13 +129,32 @@
         width: 4px;
       }
       ::-webkit-scrollbar-thumb {
-        background: #333;
+        background: #444;
       }
     </style>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   </head>
   <body>
     <div id="game-wrapper">
       <div id="main-window" class="fade-in">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+          "
+        >
+          <div id="chapter-header">데이터 초기화 중...</div>
+          <button
+            id="back-button"
+            class="back-btn"
+            onclick="goBack()"
+            style="display: none"
+          >
+            [ 뒤로 가기 ]
+          </button>
+        </div>
         <div id="text-display"></div>
         <div id="choice-container"></div>
       </div>
@@ -121,62 +169,111 @@
     </div>
 
     <script>
-      const stats = { pav: 0, rec: 0, rad: 0, mod: 0, history: [] };
+      let historyStack = [];
+      let stats = {
+        pav: 0,
+        rec: 0,
+        rad: 0,
+        mod: 0,
+        logHistory: [],
+        mirrorHistory: [],
+      };
       let currentIdx = 0;
       let textIdx = 0;
+      let resTextIdx = 0;
+      let currentResArray = [];
+      let isShowingResult = false;
 
       const scenario = [
         {
-          title: "1막: 침묵하는 도시에서",
+          title: "제1 막: 침묵하는 도시에서",
           lines: [
             "— 이 도시는 벽보다 눈이 많고, 사람보다 소문이 빠르다.",
-            "바람이 무겁게 깔려 있다. 구름은 도심의 첨탑 아래로 내려앉았다. 피곤한 걸음들이 저마다 돌바닥 위를 스치며 지나간다. 당신은 1890년, 세기말의 파리에 있다.\n\n*(파리에 대한 당신의 인상은 어떤가?)*",
-            "당신의 평가가 어떻든 이곳에서 마도학자에 대한 소문은 종이보다 얇고 빠르게 퍼진다. 벽에는 ‘Nous ne voulons pas de vous!’라는 낙서가, 발밑에는 <마도학자도 인간이다!>라는 찢긴 신문지가 뒹군다.\n\n자, 당신은 무얼 할 테지?",
+            "바람이 무겁게 깔려 있습니다. 구름은 도심의 첨탑 아래로 내려앉았습니다. 피곤한 걸음들이 저마다 돌바닥 위를 스치며 지나갑니다.",
+            "당신은 1890 년, 세기말의 파리에 있습니다. 파리에 대한 당신의 인상은 어떤가요?\n\n*(플레이어 답변 확인)*",
+            "당신의 평가가 어떻든 이곳에서 마도학자에 대한 소문은 종이보다 얇고, 그보다 더 빠르게 퍼집니다.",
+            "현재 여러 이유로 파리에 체류 중인 당신은 숱하게 마도학자에 대한 낙서와 인간들의 냉소, 시위 전단, 그리고 침묵을 목격해 왔습니다.",
+            "언제든 고개를 돌리면 벽에 마도학자를 조롱하는 낙서가 있습니다. ‘Nous ne voulons pas de vous!’ 이렇게. ‘우리는 너희를 원하지 않는다!’라니. 강렬하기도 하지요.",
+            "그리고 대결이라도 하듯 당신의 발밑에는 <마도학자도 인간이다!>라는 큼지막한 제목의 신문 한 면이 찢긴 채 뒹굽니다.\n\n자, 당신은 무얼 할 텐가요?",
           ],
           choices: [
             {
-              text: "“멍청한 낙서야.” 손끝으로 낙서를 지운다.",
+              text: "“멍청한 낙서야.” 낙서를 손끝으로 지운다. 주변의 시선을 느끼며, 조금 더 세게 문질러 본다.",
               pav: 0,
               rec: 2,
               rad: 1,
               mod: 0,
-              log: "무모한 결의",
-              res: "지워지지 않는 낙서 위로 새로운 결의가 덧칠해집니다. 당신은 [무모한 정화자]가 되었습니다.",
+              log: "[무모한 정화자]",
+              mirrorLog: "벽을 긁어 내던 그 용감한 결의",
+              res: [
+                "거친 돌벽에 손을 대자, 서늘한 감촉과 함께 머릿속에서 목청 좋은 목소리가 울려 퍼집니다.",
+                "???: 이 거친 돌벽을 봐. 이건 도전장이야. 네 손가락이 뭉개지든, 저 혐오스러운 문장이 사라지든 둘 중 하나는 결판이 나야지. 자, 더 세게 문질러! 이 증오를 지워 버릴 수만 있다면 손톱쯤이야 기꺼이 지불할 수 있잖아?",
+                "머지 않아 당신의 손끝이 붉게 달아오릅니다. 지워지지 않는 낙서 위로 새로운 결의가 덧칠해집니다.",
+                "당신은 [무모한 정화자]가 되어 세상을 바라봅니다. 이제 세상의 얼룩을 지울 수 있다고 믿는 오만함, 혹은 숭고함에 대하여 함께 생각해 봅시다.",
+                "벽에 새겨진 문장은 지울 수 있습니다. 하지만 그 문장을 쓴 자의 마음속 깊은 곳까지 손을 뻗어 긁어 낼 수 있을까요? 당신은 지금 돌벽과 싸우는 것이 아닙니다. 이 도시 전체의 보이지 않는 공기와 싸우고 있습니다.",
+              ],
             },
             {
-              text: "“이 도시는 눈이 많지.” 고개를 돌리고 걷는다.",
+              text: "“이 도시는 벽보다 눈이 많지.” 고개를 돌리고 걷는다. 낙서가 아직 얼굴 없는 군중인 한 벽은 그저 벽일 뿐이고, 당신은 피로하다.",
               pav: 2,
               rec: 0,
               rad: 0,
               mod: 1,
-              log: "투명한 등번호",
-              res: "당신은 스스로를 풍경 속으로 유배 보냈습니다. 당신의 머릿속에 [보도블록의 철학]이 쌓입니다.",
+              log: "[보도블록의 철학]",
+              mirrorLog: "시선을 돌리고 걷던 그 투명한 등번호",
+              res: [
+                "당신은 외투의 깃을 세우고 시선을 바닥으로 떨굽니다. 그때, 몽환적이고 낮은 속삭임이 당신의 발걸음을 따라옵니다.",
+                "???: 발밑을 봐. 보도블록 사이의 틈새들이 너를 비웃고 있어. 하지만 괜찮아. 네가 보지 않으면 그것들도 너를 보지 못할 거야. 넌 이제 사람이 아니라, 거리를 부유하는 차가운 안개일 뿐이니까.",
+                "당신의 머릿속에 [보도블록의 철학]이 쌓입니다. 이 철학은 군중 속의 고독을 선택한 자가 얻는 기묘한 투명 망토와 다르지 않아 보입니다.",
+                "눈이 많다면 눈을 감으면 됩니다. 당신은 스스로를 풍경 속으로 유배 보냈습니다. 투명해진다는 것은 안전하지만, 동시에 누구에게도 닿지 못한다는 뜻이기도 할 겁니다.",
+                "당신은 유령이 되기를 선택했지만, 섬뜩하게도, 이미 유령이었을지도 모르겠습니다.",
+              ],
             },
             {
-              text: "“실례합니다. 혹시 이런 낙서를 또 보셨나요?”",
+              text: "“실례합니다. 혹시 다른 곳에서도 이런 낙서를 보셨나요?” 또렷한 목소리로 옆 사람에게 묻는다.",
               pav: 0,
               rec: 1,
               rad: 0,
               mod: 0,
-              log: "불순한 호기심",
-              res: "당신은 불씨를 들고 화약고를 거니는 수사학자가 되기로 한 모양입니다. [사회적 발화점]이 기록됩니다.",
+              log: "[사회적 발화점]",
+              mirrorLog: "타인에게 금기를 묻던 그 불순한 호기심",
+              res: [
+                "당신의 목소리가 차가운 공기를 가릅니다. 옆에 서 있던 사내의 어깨가 움찔하고 떨리는 순간, 날카로운 분석이 뇌리를 스칩니다.",
+                "???: 방금 봤어? 저 신사의 눈동자가 수축하는 것. 질문 하나로 정적을 깨뜨리는 건 정말 짜릿한 일이지. 넌 지금 평화라는 이름의 얇은 얼음판 위에 돌을 던진 거야. 이제 금이 가기 시작하겠지. 자, 다음은 어디에 돌을 던질 거지?",
+                "이것으로 당신의 내면에는 [사회적 발화점]이 기록되었습니다. 금기어를 입 밖으로 내뱉는 순간 발생하는 마찰열의 기록입니다.",
+                "질문은 대답을 강요하고, 대답은 입장을 강요합니다. 침묵하는 도시에서 말을 거는 행위는 그 자체로 정치적입니다. 당신은 이제 건전한 체류자가 아니라 불씨를 들고 화약고를 거니는 수사학자가 되기로 한 모양입니다.",
+              ],
             },
             {
-              text: "신문을 집어 든다. “이 기사, 며칠자 건가요?”",
+              text: "신문을 집어 든다. 이미 절반쯤 찢긴 글자를 들고 옆의 사람에게 묻는다. “이 기사, 며칠자 건가요?”",
               pav: 2,
               rec: 0,
               rad: 1,
               mod: 0,
-              log: "강박적인 손길",
-              res: "세상은 텍스트고 당신은 편집자입니다. 당신은 이제 [편집된 세계관]이라는 렌즈를 가집니다.",
+              log: "[편집된 세계관]",
+              mirrorLog: "찢긴 신문지 조각을 이어 붙이던 그 신중한 손길",
+              res: [
+                "???: 찢어진 각도 45 도. 잉크의 산화 정도를 보니 이틀 전 인쇄된 것이군. 정보는 널려 있어. 다만 사람들이 그걸 발로 짓밟고 지나갈 뿐이지. 찢긴 신문지 조각, 잉크의 번짐, 버려진 날짜…. 이 파편들을 이어 붙여 봐.",
+                "당신은 이제 [편집된 세계관]이라는 렌즈를 통해 세상을 재구성합니다. 활자와 현실 사이의 괴리에서 오는 인지 부조화의 결과물입니다.",
+                "세상은 텍스트로 이루어져 있고, 당신은 그 편집자입니다. 찢긴 기사 속에서 진실을 찾으려는 시도는 숭고하지만 위험합니다. 누군가 의도적으로 정보를 찢어 버렸다면, 그 빈칸에는 무엇이 들어 있어야 할까요? 당신은 이제 공백을 읽는 법을 배워야 할 겁니다.",
+              ],
             },
           ],
         },
         {
-          title: "2막: La date inconnue",
+          title: "제2 막: La date inconnue",
           lines: [
             "— 이름을 묻지 않는 도시는 당신을 모른다.",
-            "리옹역 근처, 노점상의 노인이 당신에게 잉크 얼룩이 묻은 신문을 내민다.\n\n“만약 당신이 세상에 딱 하나만 남길 수 있다면 어떻게 할 거요? 기억이요, 아니면 기록?”\n\n*(플레이어의 답변을 기다린다)*",
+            "걸음을 옮겨 봅시다. 지금 당신은 저녁 무렵 리옹역 근처에 있습니다. 기차가 도착하지 않는 막간의 시간. 정해진 흐름 없이 군중들이 모였다가 흩어집니다.",
+            "당신은 기차역 앞, 아주 크고 오래된 시계 아래에서 잠시 멈춥니다. 소란합니다. 가방을 내던지는 여행자, 누군가를 배웅하는 이들, 침묵한 채 담배를 피우는 청년……. 다들 바쁘게 움직이지만, 정작 어디론가 ‘가는’ 사람은 별로 없다는 사실을, 멈추어 선 당신은 알아보았을지도 모르겠습니다.",
+            "그리고 그 사이로, 작고 조용하게 노점 하나가 보입니다. 당신이 노점 앞 종이 더미를 향해 천천히 다가가자 노점상의 노인은 신문을 정리하던 손을 멈추고는 당신을 흘끗 쳐다봅니다. \n\n“그거 살 거요?”",
+            "그리고는 당신에게 다가와 종이, 정확히는 신문 더미에서 한 장을 꺼내어 접고서는, 덤덤하게 말을 잇습니다.\n\n“벌써 오늘은 멀어졌고, 이제 내일이 더 가까운 시간인데.”",
+            "노인은 잠시 뜸을 들이더니 당신을 힐끔거리며 쳐다봅니다. 양심에 따를지 말지 고민하다가, 이내 신문을 팔기로 결심한 모양입니다.",
+            "“뭐, 사람마다 다 사는 방식이 있는 거지. 기차를 기다리는 동안 다 읽어 버린 신문을 그대로 버릴지, 주머니에 넣을지, 아니면 찢어서 바람에 날릴지는 오직 자기 자신만 아는 것처럼.”",
+            "그는 당신 앞에 신문 한 장을 내밉니다. 모퉁이가 접혀 있어 내용은 보이지 않고, 대신 누군가 흘린 잉크가 얼룩처럼 끄트머리에 남아 있습니다.",
+            "“내 나이쯤 살다 보면, 간직한다고 남는 게 아니고, 버린다고 잊는 게 아니며, 읽지 않는다고 모르는 게 아니라는 사실을 자연스럽게 알게 되지.”",
+            "노인이 투박한 손으로 신문을 건넵니다. 나온 손이 다시 돌아가지 않습니다. 아! 당신은 그제야 깨닫고 주머니에서 톱니 동전 몇 개를 세어 건넵니다. 노인은 만족스럽게 고개를 끄덕입니다.",
+            "“이 저녁에 커피값을 벌게 해 준 귀한 손님에게 이 노인네가 질문만 하나 하지. 만약 당신이 신문을 읽고 세상에 딱 하나만 남길 수 있다면 어떻게 할 거요? 기억이요, 아니면 기록?”\n\n*(플레이어 답변 확인)*",
           ],
           choices: [
             {
@@ -185,8 +282,14 @@
               rec: 2,
               rad: 0,
               mod: 1,
-              log: "고독한 서재",
-              res: "기억은 기록보다 위대하지만 그 대가는 혼자 짊어져야 할 무게입니다. [고독한 보관소]가 자리 잡습니다.",
+              log: "[고독한 보관소]",
+              mirrorLog: "자신의 내면으로 침잠하던 그 고독한 서재",
+              res: [
+                "당신의 대답을 들은 노인이 짧게 웃습니다. 노인은 당신을 두고 ‘오래 걸어서 외로울 청년’이라고 말합니다. 그리고 그 부드러운 목소리가 공명할 때, 당신의 머릿속 깊은 곳에서 아득한 울림이 번집니다",
+                "???: 맞아. 종이는 썩고 잉크는 바래지만, 네 영혼에 새겨진 감각은 영원히 박제될 거야. 기록되지 않은 진실만이 진짜 진실이지. 넌 이제 이 도시의 보이지 않는 도서관이 되는 거야. 아무도 대출할 수 없고, 오직 너만이 읽을 수 있는 책들로 가득 찬 도서관 말이야.",
+                "당신의 내면에는 [고독한 보관소]라는 생각이 자리 잡습니다. 간직한다고 다 남는 것은 아니라는 노인의 말을 듣고 난 당신은 이제 형태 없는 것들에 더 관심이 가게 될지도 모릅니다.",
+                "기억은 기록보다 위대하지만, 그 대가는 영원히 혼자 짊어져야 할 무게입니다. 당신이 잊는 순간, 그 세계는 정말로 사라질 테니까요.",
+              ],
             },
             {
               text: "“기록. 결국 누군가가 알아야 하니까요.”",
@@ -194,75 +297,150 @@
               rec: 0,
               rad: 1,
               mod: 0,
-              log: "냉정한 편집증",
-              res: "당신의 믿음은 사실을 역사가 되게 만듭니다. 당신은 [잉크의 권위]라는 관점을 얻었습니다.",
+              log: "[잉크의 권위]",
+              mirrorLog: "잉크의 농도로 진실을 재단하던 그 냉정한 편집증",
+              res: [
+                "“맞는 말이야. 그래서 요즘은 그걸 누가 쓰는지가 중요한 세상이지.” 노인이 신문을 반 접으며 말합니다. 딱 맞게 접히지 않는 종이의 질감을 지켜보는 당신의 눈에 예리한 광채가 스칩니다.",
+                "현명한 선택이야. 기억은 주관적이고 나약하지. 하지만 기록은 권력이야. 네가 남긴 한 줄의 문장이 훗날 누군가에게는 유일한 진실이 될 테니까. 비록 그 종이가 비뚤게 접힐지언정, 존재했다는 증거는 남겨야지. 그게 우리가 이 혼란스러운 세기말을 버텨 내는 유일한 방식 아니겠어?",
+                "당신은 이제 [잉크의 권위]라는 관점으로 세상을 재단할 수 있습니다. 결국 누군가가 알아야 한다는 당신의 믿음은, 사실을 역사가 되게 만듭니다. 하지만 조심합시다. 기록하는 손은 언제나 왜곡의 유혹에 노출되어 있으니까요. 당신이 남긴 문장은 당신의 의도대로 읽힐까요, 아니면 읽는 이의 욕망대로 읽힐까요?",
+              ],
             },
             {
               text: "“글쎄요. 둘 다 잊히지 않으면 좋겠네요.”",
-              pav: 0,
-              rec: 0,
-              rad: 0,
-              mod: 0,
-              log: "탐욕스러운 양손",
-              res: "합리적인 모순이군요. 당신의 정신 한구석에 [양면의 모순]이라는 화두가 남습니다.",
-            },
-          ],
-        },
-        {
-          title: "3막: 불협화 不協化",
-          lines: [
-            "— 세계가 아주 조금 어긋나기 시작했지만, 아무도 그것을 지적하지 않는다.",
-            "시계탑은 11시 18분을 가리키고 있다. 지금은 오후 7시쯤 되었을 텐데, 파리 시민들은 시계를 쳐다보지 않는다.",
-          ],
-          choices: [
-            {
-              text: "“이상하네.” 발걸음을 멈추고 시계를 응시한다.",
-              pav: 0,
-              rec: 3,
-              rad: 1,
-              mod: 0,
-              log: "기묘한 해방감",
-              res: "당신은 부조리한 풍경의 목격자가 되었습니다. 내면에 [직시하는 예언자]가 각인됩니다.",
-            },
-            {
-              text: "“뭐, 파리 시계 중 맞는 게 있던가.” 계속 걷는다.",
-              pav: 3,
-              rec: 0,
-              rad: 0,
-              mod: 1,
-              log: "영리한 무관심",
-              res: "오차를 무시하여 질서를 유지하는군요. [안정의 외면]이라는 방어 기제를 장착합니다.",
-            },
-            {
-              text: "주변에 묻는다. “저 시계, 고장 난 건가요?”",
               pav: 1,
               rec: 1,
               rad: 0,
               mod: 0,
-              log: "위태로운 의존",
-              res: "당신은 [공범자들의 연대기]를 품었습니다. 침묵의 공범들 사이에서 이방인이 된 기분이 어떤가요?",
+              log: "[양면의 모순]",
+              mirrorLog: "기억과 기록을 모두 쥐려던 그 야심찬 양손",
+              res: [
+                "“하나 남기기도 벅찬 세상이지만, 그건 분명 파리 시민에게 어울리는 대답이군.”  노인이 가볍게 웃는 사이, 바람이 노인의 손에서 한 장의 신문을 들고 갑니다. 누구의 이야기인지도 모른 채 이야기가 떠납니다.",
+                "???: 하나를 택하라는 질문에 둘 다를 외치는 건 수학적으로는 탐욕이고, 인문학적으로는 낭만이지. 기억의 휘발성과 기록의 박제성을 동시에 거머쥐겠다는 건가? 불가능에 가깝지만, 이 파리라는 기괴한 도시에서는 오히려 가장 합리적인 모순일지도 몰라.",
+                "당신의 정신 한구석에 [양면의 모순]이라는 기묘한 화두가 남습니다. 하나 남기기도 벅찬 세상에서 당신은 모든 것을 붙잡으려 합니다. 바람에 날려가는 신문처럼 이야기는 떠나가겠지만, 당신은 그 궤적을 기억하면서 동시에 그 손맛을 기록하려 할 것입니다. 이 끝없는 욕심이 당신을 구원할까요, 아니면 파멸시킬까요?",
+              ],
+            },
+          ],
+        },
+        {
+          title: "제3 막: 불협화 不協化",
+          lines: [
+            "— 세계가 아주 조금 어긋나기 시작했지만, 아무도 그것을 정확히 지적할 수 없다.",
+            "이제 해가 서서히 지기 시작하는 저녁 시간. 어딘가 습하고, 불쾌한 정적. 당신은 앞서 만난 노인과의 짧은 대화를 마치고 홀로 걷고 있습니다.",
+            "길은 낯익지만, 어딘가 미세하게 이질감이 있습니다. 당신은 아직도 이 거리가 낯선 걸까요? 아니면 거리가 여전히 당신을 낯설어하는 걸지도 모르겠습니다.",
+            "고개를 돌리자 우뚝 선 거리의 시계탑은 11 시 18 분을 가리키고 있습니다. 이상한 시간입니다. 지금은 오후 6 시나 7 시쯤 됐을 텐데요. 그 앞을 지나가는 파리 시민들은 시계를 쳐다보지 않습니다.",
+          ],
+          choices: [
+            {
+              text: " “이상하네.” 시계를 바라본다. 발걸음을 멈추고, 고개를 든다. 당신은 유일하게 응시하는 자가 된다.",
+              pav: 0,
+              rec: 3,
+              rad: 2,
+              mod: 0,
+              log: "[직시하는 예언자]",
+              mirrorLog: "멈춘 시계를 보며 느꼈던 그 기묘한 해방감",
+              res: [
+                "당신은 고개를 꺾어 시계탑의 정지된 초침을 봅니다. 주변의 흐릿한 인파 사이에서 오직 당신만이 이 부조리한 풍경의 목격자가 되었습니다.",
+                "???: 남들은 고개를 숙이고 운명에 순응할 때, 너만은 그 기괴한 진실을 쳐다보는군. 그래, 세계가 틀렸다면 네가 틀린 게 아니라 세계가 고장 난 거야. 저 멈춘 톱니바퀴 속에서 넌 무엇을 보고 있지? 뒤틀린 역사의 틈새? 아니면 곧 들이닥칠 진정한 시대의 예고편?",
+                "당신의 내면에 [직시하는 예언자]라는 감각이 각인됩니다. 이상함을 이상하다고 말하는 용기가 무엇과 닮아 있는지 아직은 모릅니다. 하지만 적어도 당신은 이제 군중이 보지 못하는 ‘진짜 파리’의 형상을 읽어 내기 시작했습니다. 이것이 통찰인지 광기 속으로의 첫걸음인지는 미래가 말해 줄 것입니다.",
+                "이제 무엇을 할 생각인가요?\n► 시계탑으로 올라가 멈춘 톱니바퀴를 억지로라도 돌려 본다.\n► 이 사실을 모르는 군중들을 향해 미친 듯이 소리친다.\n\n*(플레이어 답변 확인)*",
+                "???: 그래, 그게 바로 네가 가진 날카로운 발톱이지. 남들이 보지 못하는 것을 보고, 남들이 하지 못하는 것을 하겠다는 그 오만함. 혹은 그 숭고함.",
+                "시계탑의 거대한 그림자가 당신의 발치까지 길게 늘어집니다. 당신은 고개를 돌려 당신을 스쳐 지나가는 무지한 군중들을 바라봅니다. 그들은 여전히 오후 6 시의 가짜 태양 아래 살고 있지만, 적어도 당신은 이미 자정을 앞둔 진실 속에 서 있습니다. 이 사실이 당신에게 위안이 되겠지요.",
+              ],
+            },
+            {
+              text: " “뭐, 파리 시계 중 제대로 맞는 게 있던가.” 시선을 옮기고, 이 머저리 같은 도시를 계속해서 걷는다.",
+              pav: 3,
+              rec: 0,
+              rad: 0,
+              mod: 2,
+              log: "[안정의 외면]",
+              mirrorLog: "어긋난 시간을 못 본 척 지나치던 그 영리한 무관심",
+              res: [
+                "당신은 가볍게 코웃음을 치며 발걸음을 옮깁니다. 무질서한 도시에 질서 있는 시계 따위는 어울리지 않는다는 듯 말이죠. 그때, 차분하고 건조한 목소리가 당신의 귓가에 들립니다.",
+                "???: 합리적인 판단이야. 저 고장 난 시계에 의미를 부여하는 순간, 네 평온한 현실은 무너질 테니까. 오차를 무시하는 것이야말로 질서를 유지하는 가장 효율적인 방법이지. 파리의 모든 시계가 미쳐 버려도, 네 머릿속의 시계만 정확히 작동하면 그만이야. 안 그래?",
+                "당신은 [안정의 외면]이라는 방어 기제를 장착합니다. 불일치를 인식하되 그것에 매몰되지 않는 냉정함. 이제 당신은 안전해졌습니다. 하지만 당신이 무시한 그 5 시간의 공백이, 정말로 존재하지 않는다고 확신할 수 있나요?",
+                "당신은 정말로 그 시계가 틀렸다고 믿습니까?\n► 당연하다. 저것은 단순한 기계적 결함일 뿐이다.\n► 아니, 사실은 무섭다. 그래서 눈을 돌리는 것뿐이다.\n\n*(플레이어 답변 확인)*",
+                "???: 탁월한 자기통제력이야. 혼돈에 이름을 붙여주는 순간 그것은 실체가 되지만, 무시하는 순간 그것은 단지 일시적인 오류에 불과해지지. 넌 지금 인류가 쌓아 올린 상식이라는 거대한 댐을 수호하고 있는 거야.",
+                "당신은 흐트러진 호흡을 가다듬고 다시 걷기 시작합니다. 시계탑의 이상한 숫자는 이제 당신의 기억 속에서 빠르게 소거됩니다. 세상에는 몰라도 되는 진실이 있고, 유지되어야만 하는 거짓이 있는 법입니다. 혼란은 훌륭하게 격리되었습니다. 당신은 이제 폭풍 속에서도 흔들리지 않습니다.",
+              ],
+            },
+            {
+              text: "주변 사람에게 묻는다. “혹시 저 시계탑, 고장 난 건가요?”",
+              pav: 1,
+              rec: 1,
+              rad: 0,
+              mod: 0,
+              log: "[공범자들의 연대기]",
+              mirrorLog: "타인의 입을 통해 진실을 확인하려던 그 긴밀한 신뢰",
+              res: [
+                "“혹시 저 시계탑, 고장 난 건가요?” 안타깝지만, 당신의 질문은 허공에 흩어집니다. 지나가는 이들의 무심한 표정을 살피는 당신의 머릿속에서 여러 목소리가 얽히며 불협화음을 만듭니다.",
+                "???: 질문을 던지는군. 타인의 동의를 통해 네 감각의 오류를 수정하려는 건가? 아니면 이 침묵하는 도시의 공범자들을 확인하고 싶은 건가? 넌 지금 얼음판 위에 돌을 던졌지만, 얼음은 깨지지 않고 오히려 네 발밑까지 얼어붙고 있어. 이 침묵의 공범들 사이에서 혼자 깨어 있는 이방인이 된 기분이 어때?",
+                "당신은 [공범자들의 연대기]라는 화두를 가슴에 품습니다. 이제 당신의 질문은 답을 얻기 위함이 아니게 되었습니다.",
+                "침묵하는 군중들 사이에서 당신은 어떤 기분인가요?\n► 그들의 무지에 분노하며, 더 큰 소리로 질문을 던지고 싶다.\n► 나 또한 입을 다물고 저들 사이에 섞여 숨고 싶다.\n\n*(플레이어 답변 확인)*",
+                "???: 환영해. 질문을 던졌으나 메아리조차 돌아오지 않는 고독의 방에 들어온 걸. 이제 넌 알게 될 거야. 이 도시의 침묵이 그저 무관심이 아니라, 거대한 무언가에 대한 집단적인 공포라는 사실을 말이지.",
+                "멀어지는 행인들의 뒷모습이 마치 깎아 놓은 인형처럼 이질적으로 보입니다. 질문은 화살이 되어 당신에게로 돌아왔습니다. 당신은 이제 누구를 믿어야 할까요? 당신의 목소리에 대답하지 않는 군중? 아니면 당신에게만 말을 걸어 오는 이 내면의 환청?",
+              ],
             },
           ],
         },
       ];
 
-      function updateLog(msg) {
+      function saveState() {
+        historyStack.push(
+          JSON.parse(
+            JSON.stringify({
+              stats,
+              currentIdx,
+              textIdx,
+              resTextIdx,
+              isShowingResult,
+            })
+          )
+        );
+        document.getElementById("back-button").style.display = "block";
+      }
+
+      function goBack() {
+        if (historyStack.length === 0) return;
+        const prevState = historyStack.pop();
+        stats = prevState.stats;
+        currentIdx = prevState.currentIdx;
+        textIdx = prevState.textIdx;
+        resTextIdx = prevState.resTextIdx;
+        isShowingResult = prevState.isShowingResult;
+        document.getElementById("back-button").style.display =
+          historyStack.length > 0 ? "block" : "none";
+        document.getElementById("main-window").style.background = "#121212";
+        document.getElementById("chapter-header").style.display = "block";
+        refreshLog();
+        render();
+      }
+
+      function refreshLog() {
         const content = document.getElementById("log-content");
-        const div = document.createElement("div");
-        div.style.marginBottom = "8px";
-        div.innerText = `> ${msg}`;
-        content.prepend(div);
-        stats.history.push(msg);
+        content.innerHTML = "";
+        stats.logHistory.forEach((msg) => {
+          const div = document.createElement("div");
+          div.style.marginBottom = "10px";
+          div.innerText = `> ${msg}`;
+          content.prepend(div);
+        });
+      }
+
+      function updateLog(msg) {
+        stats.logHistory.push(msg);
+        refreshLog();
       }
 
       function render() {
+        const header = document.getElementById("chapter-header");
         const display = document.getElementById("text-display");
         const container = document.getElementById("choice-container");
         container.innerHTML = "";
-
         if (currentIdx < scenario.length) {
           const scene = scenario[currentIdx];
-          if (textIdx < scene.lines.length) {
+          header.innerText = scene.title;
+          if (!isShowingResult && textIdx < scene.lines.length) {
             let line = scene.lines[textIdx];
             display.innerHTML = line.includes("*")
               ? `<span class="thought-pause">${line}</span>`
@@ -271,33 +449,31 @@
             btn.className = "choice-btn next-btn";
             btn.innerText = "다음 [▶]";
             btn.onclick = () => {
+              if (window.getSelection().toString()) return;
+              saveState();
               textIdx++;
               render();
             };
             container.appendChild(btn);
-          } else {
+          } else if (!isShowingResult) {
             display.innerText = "당신의 결단을 기다립니다.";
             scene.choices.forEach((c) => {
               const btn = document.createElement("button");
               btn.className = "choice-btn";
               btn.innerText = c.text;
               btn.onclick = () => {
+                if (window.getSelection().toString()) return;
+                saveState();
                 stats.pav += c.pav;
                 stats.rec += c.rec;
                 stats.rad += c.rad;
                 stats.mod += c.mod;
                 updateLog(c.log);
-                display.innerText = c.res;
-                const next = document.createElement("button");
-                next.className = "choice-btn next-btn";
-                next.innerText = "장면 전환 [▶]";
-                next.onclick = () => {
-                  currentIdx++;
-                  textIdx = 0;
-                  render();
-                };
-                container.innerHTML = "";
-                container.appendChild(next);
+                stats.mirrorHistory.push(c.mirrorLog); // 이 줄이 들어가야 거울이 기억합니다!
+                currentResArray = c.res;
+                resTextIdx = 0;
+                isShowingResult = true;
+                renderResultPage();
               };
               container.appendChild(btn);
             });
@@ -307,101 +483,215 @@
         }
       }
 
+      function renderResultPage() {
+        const display = document.getElementById("text-display");
+        const container = document.getElementById("choice-container");
+        container.innerHTML = "";
+        let line = currentResArray[resTextIdx];
+        display.innerHTML = line.includes("*")
+          ? `<span class="thought-pause">${line}</span>`
+          : line;
+        const btn = document.createElement("button");
+        btn.className = "choice-btn next-btn";
+        if (resTextIdx < currentResArray.length - 1) {
+          btn.innerText = "다음 [▶]";
+          btn.onclick = () => {
+            saveState();
+            resTextIdx++;
+            renderResultPage();
+          };
+        } else {
+          btn.innerText = "장면 전환 [▶]";
+          btn.onclick = () => {
+            saveState();
+            currentIdx++;
+            textIdx = 0;
+            resTextIdx = 0;
+            isShowingResult = false;
+            render();
+          };
+        }
+        container.appendChild(btn);
+      }
+
       function renderFinalEncounter() {
+        document.getElementById("chapter-header").innerText =
+          "제 4 막: 불붙지 않은 재";
+        const display = document.getElementById("text-display");
+        const container = document.getElementById("choice-container");
+        container.innerHTML = "";
+        const isRec = stats.rec >= stats.pav;
+        const isRad = stats.rad >= stats.mod;
+
+        let encounterLines = isRec
+          ? [
+              "오후 해는 이미 기울었지만 거리는 아직도 소란합니다. 노면 전차가 천천히 지나가고, 가스등 위에 앉은 새는 꼬리를 털어냅니다. 하얀 먼지가 흩날리고, 모퉁이에 오래된 책방처럼 보이는 가게가 있습니다. 누군가 당신이 오기를 기다리기라도 한 것처럼 문을 열고 나오네요. 모자챙 아래 그림자 속에서도 여인의 눈동자는 정확히 초점을 맞춥니다.",
+              "그녀가 손을 뻗어 잉크병을 당신에게 내밉니다. 의아해하는 사이에 아르카나의 목소리가 뱀처럼 흘러나와 당신에게 닿습니다.",
+              isRad
+                ? "“당신은 세상을 고치려 하는 게 아니라, 이미 썩어 버린 껍질을 벗겨 내려 하는군요. 자, 이 잉크병을 보세요. 당신이라면 이 ‘검은 오답’을 어떻게 처리하겠어요?”"
+                : "“기록되지 않은 진실이 얼마나 무거운지 당신은 알죠. 이 잉크병 속에 담긴 가능성들을 당신은 그저 바라만 볼 건가요, 아니면 해방할 건가요?”",
+              "이 잉크는 아직 아무것도 적지 않았지만, 동시에 모든 가능성을 품고 있습니다. 자, 이 잉크병을 어떻게 할까요?",
+            ]
+          : [
+              "시계탑의 그림자가 길게 늘어진 광장 한복판, 누군가 버리고 간 듯한 낡은 벤치 하나가 놓여 있습니다. 그곳에 검은 고양이 한 마리가 앉아 당신을 조용히 응시합니다. 그가 앞발을 핥으며 고개를 들자 믿기 힘들게도 목소리가 흘러나옵니다.",
+              "작은 앞발이 벤치 위에 놓인 잉크병을 당신 쪽으로 툭 밀어 버립니다.",
+              isRad
+                ? "“그 지독한 계산력이 마음에 든다. 자네는 혼돈을 혐오하지. 아니, 혼돈을 ‘정리’하고 싶어 해. 이 잉크병은 통제되지 않은 변수일 뿐이다. 이걸 어떻게 관리할 테지?”"
+                : "“상식의 댐을 지키던 자네의 인내심을 높이 평가한다. 세상이 아무리 비명을 질러도 자네는 평온을 택했지. 자, 여기 아주 위험한 잉크가 있도다. 자네의 평화를 위해 이 병을 어떻게 다룰 테지?”",
+              "이 잉크는 아직 아무것도 적지 않았지만, 동시에 모든 가능성을 품고 있습니다. 자, 이 잉크병을 어떻게 할까요?",
+            ];
+
+        let step = 0;
+        function showEnc() {
+          display.innerText = encounterLines[step];
+          container.innerHTML = "";
+          if (step < encounterLines.length - 1) {
+            const btn = document.createElement("button");
+            btn.className = "choice-btn next-btn";
+            btn.innerText = "다음 [▶]";
+            btn.onclick = () => {
+              step++;
+              showEnc();
+            };
+            container.appendChild(btn);
+          } else {
+            [
+              {
+                t: "병을 열어 벤치 아래 흙바닥에 쏟아 버린다.",
+                res: isRec
+                  ? [
+                      "검은 액체는 차가운 흙 속으로 맥없이 잦아들어, 이내 흔적조차 남기지 않고 사라집니다. 쓰이지 못한 이야기는 누구도 다치게 할 수 없고, 바닥은 다시 아무 일도 없었다는 듯 평온한 색을 되찾았습니다. 당신은 방금, 태어나지 못한 수많은 진실에게 가장 고요한 무덤을 내어 준 셈입니다.",
+                      "???: 봐. 잉크가 자유를 찾았어. 이제 저 액체는 종이 위에서 누군가를 속이는 문장이 되지 않을 거야. 넌 기록을 거부함으로써 역설적으로 이 도시의 진짜 영혼을 지켜 냈지. 적어도 누군가는 네가 ‘비워 냄’으로써 세계를 다시 시작할 준비가 되었다는 걸 알아챘어.",
+                    ]
+                  : [
+                      "???: 정갈한 끝맺음이야. 하지만 통제되지 않는 것은 때로 더 큰 그리움이 되기도 하지. 지금은 잉크를 쏟아 바닥을 깨끗이 비웠지만, 그 자리에 남은 얼룩은 이제 너의 기록부 어디에도 남지 않는 유령이 되었어. 잠시야 평온해지겠지만, 가끔 비가 내리는 밤이면 흙 속으로 스며든 그 가능성들이 너의 꿈결을 검게 적실지도 모르지. 비워 낸 자리에 질서가 깃들길 바라지.”",
+                      "당신은 관리 대신 침묵을 택했습니다. 하지만 기록되지 않은 것은 결코 잊히지 않고, 오직 당신의 직감 속에서만 예민하게 살아 움직일 것입니다. 당신은 깨끗한 바닥을 얻었으나, 대신 그 흙 밑에 무엇이 묻혀 있는지 아는 유일한 목격자가 되었습니다.",
+                    ],
+              },
+              {
+                t: "병을 꽉 잠근 채 코트 가장 깊은 주머니에 넣는다.",
+                res: isRec
+                  ? [
+                      "???: 결국 품기로 했군. 쏟아 버려 해방하기보다는, 스스로 그 무게를 견디는 길을 택했어. 하지만 알아 둬야 해. 그 병이 깨지는 날, 네가 격리하려 했던 그 혼돈은 당신의 심장부터 물들일 거야. 넌 이제 해방자가 아니라, 소중한 비밀을 가둔 채 평생을 서성이는 보관자가 되었지.",
+                      "외투 주머니가 묵직해질 때마다, 네가 외면한 저 안개의 목소리가 네 심장 근처에서 조용히 출렁일 거다. 당신은 파괴를 유예했습니다. 하지만 가슴 속의 불꽃은 꺼지지 않았습니다. 그 불꽃은 당신의 품 안에서 은밀하게 타오르는 법을 배울 것 입니다.",
+                    ]
+                  : [
+                      "???: 효율적인 관리야. 쏟아진 잉크는 오염이지만, 병에 담긴 잉크는 자산이지. 넌 이 혼돈의 가능성을 네 몸 안으로 격리했어. 이제 이 도시의 평화는 네 주머니 속에 담긴 저 작은 병의 밀폐력에 달려 있지.",
+                      "당신은 이 무거운 잉크를 평생 짊어지고 걸어야 합니다. 병 안에서 잉크가 흔들리는 소리가 당신의 심장박동처럼 느껴질 것입니다. 잉크병 하나만큼의 무게는 이제 당신의 보폭이자, 당신이 감당해야 할 유일한 비밀입니다.",
+                    ],
+              },
+            ].forEach((c) => {
+              const btn = document.createElement("button");
+              btn.className = "choice-btn";
+              btn.innerText = c.t;
+              btn.onclick = () => {
+                saveState();
+                currentResArray = c.res;
+                resTextIdx = 0;
+                isShowingResult = true;
+                renderFinalResultPage();
+              };
+              container.appendChild(btn);
+            });
+          }
+        }
+        showEnc();
+      }
+
+      function renderFinalResultPage() {
+        const display = document.getElementById("text-display");
+        const container = document.getElementById("choice-container");
+        container.innerHTML = "";
+        display.innerText = currentResArray[resTextIdx];
+        const btn = document.createElement("button");
+        btn.className = "choice-btn next-btn";
+        if (resTextIdx < currentResArray.length - 1) {
+          btn.innerText = "다음 [▶]";
+          btn.onclick = () => {
+            saveState();
+            resTextIdx++;
+            renderFinalResultPage();
+          };
+        } else {
+          btn.innerText = "종막으로 [▶]";
+          btn.onclick = showFinalMirror;
+        }
+        container.appendChild(btn);
+      }
+
+      function showFinalMirror() {
+        document.getElementById("chapter-header").innerText =
+          "종막: 도시의 경첩은 천천히 닫힌다";
         const display = document.getElementById("text-display");
         const container = document.getElementById("choice-container");
         const isRec = stats.rec >= stats.pav;
         const isRad = stats.rad >= stats.mod;
+        let identity = isRec
+          ? isRad
+            ? "파괴를 통한 정화의 집행관"
+            : "침묵하는 진실의 증언자"
+          : isRad
+          ? "혼돈을 해체하는 철혈의 관리자"
+          : "상식의 댐을 수호하는 파수꾼";
 
-        let encounterText = isRec
-          ? "여인이 문을 열고 나옵니다. 아르카나의 목소리가 뱀처럼 당신에게 닿습니다. " +
-            (isRad
-              ? "“이미 썩어 버린 껍질을 벗겨 내려 하는군요.”"
-              : "“기록되지 않은 진실이 얼마나 무거운지 당신은 알죠.”")
-          : "검은 고양이 한 마리가 당신을 응시합니다. 베헤못의 목소리가 흘러나옵니다. " +
-            (isRad
-              ? "“그 지독한 계산력이 마음에 들어. 혼돈을 정리하고 싶어 하는군.”"
-              : "“상식의 댐을 지키던 인내심을 높이 평가한다.”");
-
-        display.innerText =
-          encounterText + "\n\n“자, 이 잉크병을 어떻게 하겠나?”";
-
-        const choices = [
-          {
-            text: "병을 열어 흙바닥에 쏟아 버린다.",
-            res: "잉크는 흙 속으로 스며들어 안식을 찾습니다. 태어나지 못한 진실에게 고요한 무덤을 내어준 셈입니다.",
-          },
-          {
-            text: "병을 꽉 잠근 채 주머니에 넣는다.",
-            res: "당신은 이 무거운 잉크를 평생 짊어지기로 합니다. 잉크병의 무게는 이제 당신의 보폭이자 유일한 비밀입니다.",
-          },
+        const mLines = [
+          "하지만 당신이 정작 잉크병에 손을 뻗는 순간, 주변의 소음이 멀어지고 세상은 흑백으로 점멸합니다. 당신의 머릿속에서 가장 시끄러웠던 목소리들이 일제히 입을 다물고, 단 하나의 목소리만이 당신의 심장박동을 타고 흐릅니다.",
+          `???: 잠깐. 정말로 이게 네가 원했던 결말인가?\n\n${identity}으로 사는 것.`,
+          `눈앞의 잉크병이 거울처럼 매끄러워지며, 이윽고 당신의 내면을 비춥니다. ${stats.mirrorHistory.join(
+            ", "
+          )}까지…. 그 모든 파편이 당신의 눈동자 안에 일렁입니다.`,
         ];
 
-        choices.forEach((c) => {
-          const btn = document.createElement("button");
-          btn.className = "choice-btn";
-          btn.innerText = c.text;
-          btn.onclick = () => {
-            display.innerText =
-              c.res +
-              "\n\n하지만 당신이 잉크병에 손을 뻗는 순간, 세상이 흑백으로 점멸합니다.";
-            const next = document.createElement("button");
-            next.className = "choice-btn next-btn";
-            next.innerText = "내면의 거울 [▶]";
-            next.onclick = showFinalMirror;
-            container.innerHTML = "";
-            container.appendChild(next);
-          };
-          container.appendChild(btn);
-        });
-      }
-
-      function showFinalMirror() {
-        const display = document.getElementById("text-display");
-        const container = document.getElementById("choice-container");
-
-        let mirrorText = `???: 잠깐. 정말로 이게 네가 원했던 결말인가?\n\n잉크병이 거울처럼 당신의 과거를 비춥니다. ${stats.history.join(
-          ", "
-        )}... 그 모든 파편이 당신의 눈동자 안에 일렁입니다.`;
-        display.innerText = mirrorText;
-
-        const finalChoices = [
-          "나는 그저 내가 본 것을 믿을 뿐이다.",
-          "나는 무엇이 옳은지 여전히 모른다. 그저 발을 내디딜 뿐.",
-        ];
-        finalChoices.forEach((fc) => {
-          const btn = document.createElement("button");
-          btn.className = "choice-btn";
-          btn.innerText = fc;
-          btn.onclick = showEpilogue;
-          container.appendChild(btn);
-        });
+        let mStep = 0;
+        function stepM() {
+          display.innerText = mLines[mStep];
+          container.innerHTML = "";
+          if (mStep < mLines.length - 1) {
+            const btn = document.createElement("button");
+            btn.className = "choice-btn next-btn";
+            btn.innerText = "다음 [▶]";
+            btn.onclick = () => {
+              mStep++;
+              stepM();
+            };
+            container.appendChild(btn);
+          } else {
+            [
+              "나는 그저 내가 본 것을 믿을 뿐이다. (흔들림 없는 확신. 당신은 거울 속의 자신과 눈을 맞춘다.)",
+              "나는 무엇이 옳은지 여전히 모른다. 그저 발을 내디딜 뿐. (지독한 피로감. 당신은 거울 속의 자신으로부터 고개를 돌린다.)",
+            ].forEach((t) => {
+              const btn = document.createElement("button");
+              btn.className = "choice-btn";
+              btn.innerText = t;
+              btn.onclick = () => {
+                saveState();
+                showEpilogue();
+              };
+              container.appendChild(btn);
+            });
+          }
+        }
+        stepM();
       }
 
       function showEpilogue() {
+        document.getElementById("chapter-header").style.display = "none";
         const display = document.getElementById("text-display");
         const container = document.getElementById("choice-container");
         container.innerHTML = "";
         document.getElementById("main-window").style.background = "#000";
-
-        // 1. 서사적 엔딩 출력
-        display.innerHTML = `<div class="fade-in" style="font-size: 1.1em; color: #eee; line-height: 2;">
-        가로등이 임종을 앞둔 노인의 마지막 숨결처럼 파르르 떨리더니, 이내 칠흑 같은 어둠 속으로 자취를 감추었습니다. 
-        멈춰 있던 시계탑이 육중한 소리를 내며 11시 19분으로 넘어갑니다. 
-        당신의 머릿속 가장 깊은 방 안에서 잉크 냄새 섞인 재가 고요히 가라앉고 있습니다.
-
-        마침내 당신이라는 고독한 이물질을 기꺼이 삼켜 버린 이 거대한 도시의 경첩은, 운명의 신이 내리는 판결문처럼 천천히, 그리고 엄숙하게 닫힙니다.
-
-        그리하여 아무도 당신을 묻지 않는 이 도시, 1890년의 파리가 당신을 모른 채로 남아 있더라도, 당신은 제자리에 선다.
-    </div>`;
-
-        // 2. 결과 확인 버튼 생성 (사용자가 직접 클릭)
-        const resultBtn = document.createElement("button");
-        resultBtn.className = "choice-btn next-btn";
-        resultBtn.style.marginTop = "30px";
-        resultBtn.innerText = "나의 성향 확인하기 [▶]";
-        resultBtn.onclick = renderFinalReport;
-        container.appendChild(resultBtn);
+        const isRec = stats.rec >= stats.pav;
+        const eText = `그게 당신의 선택이라면.\n\n이 짧은 내면의 대화가 끝난 뒤, 다시 리옹역의 시계 소리가 들리고 안개가 당신을 덮칩니다.\n\n${
+          isRec
+            ? "안개 속으로 사라지는 그녀를 보는 당신의 등 뒤로, 리옹역의 거대한 시계 소리가 들려옵니다."
+            : "고양이가 사뿐히 떠난 후 당신은 다시 홀로 남겨진 광장에서 자신의 코트 주머니를 움켜 쥡니다."
+        } 멈춰 있던 시계탑이 육중한 소리를 내며 11 시 19 분으로 넘어갑니다. 그리고, 가로등이 한 번 깜빡이다가 완전히 꺼집니다. 당신의 머릿속 가장 깊은 방 안에서 잉크 냄새 섞인 재가 고요히 가라앉고 있습니다.\n\n마침내 당신이라는 고독한 이물질을 기꺼이 삼켜 버린 이 거대한 도시의 경첩은, 운명의 신이 내리는 판결문처럼 천천히, 그리고 엄숙하게 닫힙니다.\n\n그리하여 아무도 당신을 묻지 않는 이 도시, 1890 년의 파리가 당신을 모른 채로 남아 있더라도, 당신은 제자리에 섭니다.`;
+        display.innerText = eText;
+        const resBtn = document.createElement("button");
+        resBtn.className = "choice-btn next-btn";
+        resBtn.innerText = "최종 성향 진단서 [▶]";
+        resBtn.onclick = renderFinalReport;
+        container.appendChild(resBtn);
       }
 
       function renderFinalReport() {
@@ -409,72 +699,58 @@
         const container = document.getElementById("choice-container");
         container.innerHTML = "";
 
-        // 진영 및 성향 판정
-        const faction =
-          stats.rec >= stats.pav
-            ? "재건의 손 (Manus Vindictae)"
-            : "성 파블로프 재단 (St. Pavlov Foundation)";
-        const tendency =
-          stats.rad >= stats.mod ? "급진적 (Radical)" : "온건적 (Moderate)";
+        const isRec = stats.rec >= stats.pav;
+        const isRad = stats.rad >= stats.mod;
+        const f = isRec ? "재건의 손" : "성 파블로프 재단";
+        const t = isRad ? "급진적" : "온건적";
+        let identity = isRec
+          ? isRad
+            ? "파괴를 통한 정화의 집행관"
+            : "침묵하는 진실의 증언자"
+          : isRad
+          ? "혼돈을 해체하는 철혈의 관리자"
+          : "상식의 댐을 수호하는 파수꾼";
 
-        let profileTitle = "";
-        let profileDesc = "";
-
-        // 조합별 상세 설명
-        if (stats.rec >= stats.pav) {
-          // 재건의 손
-          if (stats.rad >= stats.mod) {
-            profileTitle = "파괴를 통한 정화의 집행관";
-            profileDesc =
-              "당신은 고장 난 세계를 수리하려 들지 않습니다. 대신 그 썩어버린 껍질을 통째로 벗겨내려 하죠. 당신의 손끝에 묻은 잉크는 새로운 세계를 그리기 위한 피와 같습니다.";
-          } else {
-            profileTitle = "침묵하는 진실의 증언자";
-            profileDesc =
-              "당신은 기록되지 않은 기억이 가진 무거운 가치를 압니다. 세상이 당신을 외면하더라도, 당신은 홀로 보이지 않는 도서관의 사서가 되어 사라져가는 것들을 지킬 것입니다.";
-          }
-        } else {
-          // 성 파블로프 재단
-          if (stats.rad >= stats.mod) {
-            profileTitle = "혼돈을 해체하는 철혈의 관리자";
-            profileDesc =
-              "당신에게 세상은 정렬되어야 할 데이터입니다. 규격에서 벗어난 1분의 오차조차 용납하지 않는 당신의 냉철함이, 세기말의 혼란으로부터 인류의 질서를 지탱합니다.";
-          } else {
-            profileTitle = "상식의 댐을 수호하는 파수꾼";
-            profileDesc =
-              "세상이 비명을 질러도 당신은 평온을 택했습니다. 거대한 혼돈을 무시함으로써 질서를 유지하는 당신의 인내심이야말로, 이 무정한 도시에서 살아남는 가장 영리한 방식입니다.";
-          }
-        }
-
+        // 이미지로 찍힐 영역을 #final-report-area로 감쌉니다.
         display.innerHTML = `
-        <div class="fade-in" style="border: 1px solid var(--accent); padding: 30px; background: #111; line-height: 1.6;">
+        <div id="final-report-area" class="fade-in" style="border: 1px solid var(--accent); padding: 30px; background: #111; color: #d1d1d1; font-family: 'Nanum+Myeongjo', serif;">
             <div style="color: var(--accent); font-size: 1.4em; font-weight: bold; margin-bottom: 25px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px;">
                 [ 1890 파리 : 최종 성향 진단서 ]
             </div>
-            
-            <div style="margin-bottom: 20px;">
-                <span style="color: var(--dim);">최종 소속:</span> <span style="font-size: 1.1em; color: #fff;">${faction}</span><br>
-                <span style="color: var(--dim);">행동 성향:</span> <span style="font-size: 1.1em; color: #fff;">${tendency}</span>
-            </div>
-
             <div style="margin-bottom: 25px; background: #1a1a1a; padding: 15px; border-left: 4px solid var(--accent);">
-                <div style="font-weight: bold; color: var(--accent); margin-bottom: 5px;">"${profileTitle}"</div>
-                <div style="font-size: 0.95em; color: #ccc;">${profileDesc}</div>
+                <div style="font-weight: bold; color: var(--accent); margin-bottom: 5px; font-size: 1.1em;">"${identity}"</div>
             </div>
-            
+            <div style="margin-bottom: 20px;">
+                <span style="color: var(--dim);">소속:</span> ${f}<br>
+                <span style="color: var(--dim);">성향:</span> ${t}
+            </div>
             <div style="border-top: 1px solid #333; padding-top: 15px;">
-                <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: var(--dim);">내재화된 생각의 파편들:</div>
-                <div style="color: #888; font-size: 0.85em; font-style: italic;">
-                    ${
-                      stats.history.length > 0
-                        ? stats.history.join(" / ")
-                        : "침묵의 이방인"
-                    }
-                </div>
+                <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.85em; color: var(--dim);">내재화된 생각의 파편들:</div>
+                <div style="color: #888; font-size: 0.8em; font-style: italic;">${stats.logHistory.join(
+                  " / "
+                )}</div>
             </div>
-            
-            <button class="choice-btn next-btn" style="margin-top: 30px; text-align: center;" onclick="location.reload()">새로운 파리로 돌아가기</button>
-        </div>
+        </div>`;
+
+        // 버튼 영역에 '저장하기'와 '다시 시작' 추가
+        container.innerHTML = `
+        <button class="choice-btn next-btn" style="margin-top: 20px; background: var(--accent); color: #000;" onclick="saveAsImage()">이 결과를 이미지로 저장하기 [↓]</button>
+        <button class="choice-btn next-btn" style="margin-top: 10px;" onclick="location.reload()">새로운 여정 시작</button>
     `;
+      }
+
+      function saveAsImage() {
+        const reportArea = document.querySelector("#final-report-area"); // 진단서 영역 선택
+
+        html2canvas(reportArea, {
+          backgroundColor: "#111", // 배경색 유지
+          scale: 2, // 고해상도로 저장
+        }).then((canvas) => {
+          const link = document.createElement("a");
+          link.download = `1890_Paris_Archive_${new Date().getTime()}.png`;
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        });
       }
 
       render();
