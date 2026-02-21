@@ -295,7 +295,7 @@
           title: "제2 막: La date inconnue",
           subtitle: "— 이름을 묻지 않는 도시는 당신을 모른다.",
           lines: [
-            "걸음을 옮겨 봅시다. 지금 당신은 저녁 무렵 리옹역 근처에 있습니다. 기차가 도착하지 않는 막간의 시간. 정해진 흐름 없이 군중들이 모였다가 흩어집니다.",
+            "걸음을 옮겨 봅시다. 지금 당신은 저녁 무렵 리옹 역 근처에 있습니다. 기차가 도착하지 않는 막간의 시간. 정해진 흐름 없이 군중들이 모였다가 흩어집니다.",
             "당신은 기차역 앞, 아주 크고 오래된 시계 아래에서 잠시 멈춥니다. 소란합니다. 가방을 내던지는 여행자, 누군가를 배웅하는 이들, 침묵한 채 담배를 피우는 청년……. 다들 바쁘게 움직이지만, 정작 어디론가 ‘가는’ 사람은 별로 없다는 사실을, 멈추어 선 당신은 알아보았을지도 모르겠습니다.",
             "그리고 그 사이로, 작고 조용하게 노점 하나가 보입니다. 당신이 노점 앞 종이 더미를 향해 천천히 다가가자 노점상의 노인은 신문을 정리하던 손을 멈추고는 당신을 흘끗 쳐다봅니다. \n\n“그거 살 거요?”",
             "그리고는 당신에게 다가와 종이, 정확히 신문 더미에서 한 장을 꺼내어 접고서는, 덤덤하게 말을 잇습니다.\n\n“벌써 오늘은 멀어졌고, 이제 내일이 더 가까운 시간인데.”",
@@ -889,7 +889,7 @@
         let sideText = "";
         if (stats.rec > stats.pav) {
           sideText =
-            "안개 속으로 사라지는 그녀를 보는 당신의 등 뒤로, 리옹역의 거대한 시계 소리가 들려옵니다.";
+            "안개 속으로 사라지는 그녀를 보는 당신의 등 뒤로, 리옹 역의 거대한 시계 소리가 들려옵니다.";
         } else if (stats.pav > stats.rec) {
           sideText =
             "고양이가 사뿐히 떠난 후 당신은 다시 홀로 남겨진 광장에서 자신의 코트 주머니를 움켜쥡니다.";
@@ -898,7 +898,7 @@
             "당신은 누구의 편도 아닌 채 텅 빈 광장에 홀로 서 있습니다.";
         }
 
-        const eText = `그게 당신의 선택이라면.\n\n이 짧은 내면의 대화가 끝난 뒤, 다시 리옹역의 시계 소리가 들리고 안개가 당신을 덮칩니다.\n\n${sideText} 멈춰 있던 시계탑이 육중한 소리를 내며 11 시 19 분으로 넘어갑니다. 그리고, 가로등이 한 번 깜빡이다가 완전히 꺼집니다. 당신의 머릿속 가장 깊은 방 안에서 잉크 냄새 섞인 재가 고요히 가라앉고 있습니다.\n\n마침내, ‘당신’이라는 고독한 이물질을 기꺼이 삼켜 버린 이 거대한 도시의 경첩은, 운명을 관장하는 신이 내리는 판결문처럼 천천히, 그리고 엄숙하게 닫힙니다.\n\n그리하여 아무도 당신을 묻지 않는 이 도시, 1890 년의 파리가 당신을 모른 채로 남아 있더라도, 당신은 제자리에 섭니다.`;
+        const eText = `그게 당신의 선택이라면.\n\n이 짧은 내면의 대화가 끝난 뒤, 다시 리옹 역의 시계 소리가 들리고 안개가 당신을 덮칩니다.\n\n${sideText} 멈춰 있던 시계탑이 육중한 소리를 내며 11 시 19 분으로 넘어갑니다. 그리고, 가로등이 한 번 깜빡이다가 완전히 꺼집니다. 당신의 머릿속 가장 깊은 방 안에서 잉크 냄새 섞인 재가 고요히 가라앉고 있습니다.\n\n마침내, ‘당신’이라는 고독한 이물질을 기꺼이 삼켜 버린 이 거대한 도시의 경첩은, 운명을 관장하는 신이 내리는 판결문처럼 천천히, 그리고 엄숙하게 닫힙니다.\n\n그리하여 아무도 당신을 묻지 않는 이 도시, 1890 년의 파리가 당신을 모른 채로 남아 있더라도, 당신은 제자리에 섭니다.`;
 
         display.innerText = eText;
 
@@ -949,25 +949,48 @@
         else if (convertibility >= 50) convComment = "합리적 회의주의자";
         else if (convertibility >= 20) convComment = "확신에 찬 행동가";
         else convComment = "타협 없는 근본주의자";
-
-        display.innerHTML = `
-    <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 30px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
-        <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin: 0 0 15px 0; text-align: center; border-bottom: 1px solid #444; padding: 0 0 15px 0; letter-spacing: 0;">
+display.innerHTML = `
+    <div id="final-report-area" class="fade-in" style="
+        border: 2px solid #ffffff;
+        padding: 15px; 
+        background-color: #000000;
+        color: #ffffff;
+        font-family: 'Nanum Myeongjo', serif; 
+        max-width: 480px; 
+        margin: 0 auto; 
+        box-sizing: border-box;
+    ">
+        <div style="
+            color: #ffffff;
+            font-size: 1.2em; 
+            font-weight: bold; 
+            margin: 0; 
+            padding-bottom: 10px; 
+            text-align: center; 
+            border-bottom: 1px solid #555; 
+            letter-spacing: 0;
+        ">
             [ 레치타티보의 순간: 최종 성향 진단서 ]
         </div>
-        <div style="margin-bottom: 15px; background-color: #1a1a1a !important; padding: 15px; border-left: 5px solid #a5d6a7 !important; text-align: center;">
-            <div style="font-weight: bold; color: #a5d6a7 !important; font-size: 1.15em;">"${identity}"</div>
+        <div style="
+            margin: 15px 0; 
+            background-color: #111111; 
+            padding: 15px; 
+            border-left: 5px solid #a5d6a7; 
+            text-align: center;
+        ">
+            <div style="font-weight: bold; color: #a5d6a7; font-size: 1.15em;">"${identity}"</div>
         </div>
-        <div style="margin-bottom: 20px; font-size: 1em; line-height: 1.8; color: #ffffff !important;">
-            <span style="color: #dddddd !important; font-weight: bold;">소속:</span> <span style="color: #ffffff !important;">${f}</span><br>
-            <span style="color: #dddddd !important; font-weight: bold;">성향:</span> <span style="color: #ffffff !important;">${t}</span><br>
-            <span style="color: #dddddd !important; font-weight: bold;">전향 가능성:</span> 
-            <span style="color: #a5d6a7 !important;">${convertibility}%</span> 
-            <span style="font-size: 0.85em; color: #dddddd !important;">(${convComment})</span>
+        <div style="margin-bottom: 20px; font-size: 1em; line-height: 1.8; color: #ffffff;">
+            <span style="color: #cccccc; font-weight: bold;">소속:</span> <span style="color: #ffffff;">${f}</span><br>
+            <span style="color: #cccccc; font-weight: bold;">성향:</span> <span style="color: #ffffff;">${t}</span><br>
+            <span style="color: #cccccc; font-weight: bold;">전향 가능성:</span> 
+            <span style="color: #a5d6a7;">${convertibility}%</span> 
+            <span style="font-size: 0.85em; color: #aaaaaa;">(${convComment})</span>
         </div>
         <div style="border-top: 1px solid #444; padding-top: 15px;">
-            <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: #dddddd !important;">내재화된 생각의 파편들:</div>
-            <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(
+            <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: #cccccc;">내재화된 생각의 파편들:</div>
+            <div style="color: #ffffff; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(
               " / "
             )}</div>
         </div>
@@ -985,14 +1008,23 @@
 
         document.fonts.ready.then(() => {
           html2canvas(reportArea, {
-            backgroundColor: "#111111",
+            backgroundColor: "#000000", // 🌟 캡처 배경색을 완전 검정으로 고정
             scale: 4,
             useCORS: true,
             logging: false,
             width: reportArea.offsetWidth,
             height: reportArea.offsetHeight,
             onclone: (clonedDoc) => {
-              clonedDoc.getElementById("final-report-area").style.opacity = "1";
+              const clonedArea = clonedDoc.getElementById("final-report-area");
+              clonedArea.style.opacity = "1";
+              // 캡처 시 강제로 모든 텍스트를 흰색으로 변경
+              clonedArea.style.color = "#ffffff";
+              const allTexts = clonedArea.querySelectorAll("*");
+              allTexts.forEach(el => {
+                  if (window.getComputedStyle(el).color !== 'rgb(165, 214, 167)') { // 포인트 컬러(연두) 제외하고 흰색 적용
+                      el.style.color = "#ffffff";
+                  }
+              });
             },
           }).then((canvas) => {
             try {
