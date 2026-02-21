@@ -490,7 +490,6 @@
               render();
             };
 
-            // 🌟 1) 텍스트 내부의 유사 선택지 처리
             if (line.includes("➤")) {
               const parts = line.split("➤");
               let mainText = parts[0].replace("*(플레이어 답변 확인)*", "").trim();
@@ -614,7 +613,6 @@
         let handled = false;
         let isInputRequired = line.includes("*(플레이어 답변 확인)*");
 
-        // 🌟 1) 결과창 텍스트 내부의 유사 선택지 처리
         if (line.includes("➤")) {
           const parts = line.split("➤");
           let mainText = parts[0].replace("*(플레이어 답변 확인)*", "").trim();
@@ -764,6 +762,7 @@
               btn.innerText = c.t;
               btn.onclick = () => {
                 saveState();
+                updateLog(`[선택] ${c.t.replace("➤ ", "").trim()}`);
                 currentResArray = c.res;
                 resTextIdx = 0;
                 isShowingResult = true;
@@ -776,86 +775,94 @@
         showEnc();
       }
 
-      function renderFinalResultPage() {
+      function renderFinalEncounter() {
+        document.getElementById("chapter-header").innerText =
+          "제4 막: 불붙지 않은 재";
         const display = document.getElementById("text-display");
         const container = document.getElementById("choice-container");
         container.innerHTML = "";
-        display.innerText = currentResArray[resTextIdx];
-        const btn = document.createElement("button");
-        btn.className = "choice-btn next-btn";
-        if (resTextIdx < currentResArray.length - 1) {
-          btn.innerText = "다음 [▶]";
-          btn.onclick = () => {
-            saveState();
-            resTextIdx++;
-            renderFinalResultPage();
-          };
-        } else {
-          btn.innerText = "종막으로 [▶]";
-          btn.onclick = () => {
-            saveState();
-            showFinalMirror();
-          };
-        }
-        container.appendChild(btn);
-      }
-
-      function showFinalMirror() {
-        document.getElementById("chapter-header").innerText =
-          "종막: 도시의 경첩은 천천히 닫힌다";
-        const display = document.getElementById("text-display");
-        const container = document.getElementById("choice-container");
         const isRec = stats.rec >= stats.pav;
         const isRad = stats.rad >= stats.mod;
-        let identity = isRec
-          ? isRad
-            ? "파괴를 통한 정화의 집행관"
-            : "침묵하는 진실의 증언자"
-          : isRad
-          ? "혼돈을 해체하는 철혈의 관리자"
-          : "상식의 댐을 수호하는 파수꾼";
 
-        const orderedHistory = stats.mirrorHistory.slice().reverse();
+        const subtitle =
+          "— 당신이 어디에 있어야 하는지 알게 되는 순간, 도시는 더 이상 낯설지 않다. 그렇다고 익숙해지는 건 아니지만.";
 
-        const mLines = [
-          "\n\n 하지만 당신이 정작 잉크병에 손을 뻗는 순간, 주변의 소음이 멀어지고 세상은 흑백으로 점멸합니다. 당신의 머릿속에서 가장 시끄러웠던 목소리들이 일제히 입을 다물고, 단 하나의 목소리만이 당신의 심장박동을 타고 흐릅니다.",
-          `???: 잠깐. 정말로 이게 네가 원했던 결말인가? ${identity}(으)로 사는 것.`,
-          `눈앞의 잉크병이 거울처럼 매끄러워지며, 이윽고 당신의 내면을 비춥니다. ${stats.mirrorHistory.join(
-            ", "
-          )}까지…. 모든 파편이 당신의 눈동자 안에 일렁입니다.`,
-        ];
+        let encounterLines = isRec
+          ? [
+              subtitle,
+              "오후 해는 이미 기울었지만 거리는 아직도 소란합니다. 노면 전차가 천천히 지나가고, 가스등 위에 앉은 새는 꼬리를 털어냅니다. 하얀 먼지가 흩날리고, 모퉁이에 오래된 책방처럼 보이는 가게가 있습니다. 누군가 당신이 오기를 기다리기라도 한 것처럼 문을 열고 나오네요. 모자챙 아래 그림자 속에서도 여인의 눈동자는 정확히 초점을 맞춥니다.",
+              "그녀가 손을 뻗어 잉크병을 당신에게 내밉니다. 의아해하는 사이에 아르카나의 목소리가 뱀처럼 흘러나와 당신에게 닿습니다.",
+              isRad
+                ? "“당신은 세상을 고치려 하는 게 아니라, 이미 썩어 버린 껍질을 벗겨 내려 하는군요. 자, 이 잉크병을 보세요. 당신이라면 이 ‘검은 오답’을 어떻게 처리하겠어요?”"
+                : "“기록되지 않은 진실이 얼마나 무거운지 당신은 알죠. 이 잉크병 속에 담긴 가능성들을 당신은 그저 바라만 볼 건가요, 아니면 해방할 건가요?”",
+              "이 잉크는 아직 아무것도 적지 않았지만, 동시에 모든 가능성을 품고 있습니다. 자, 이 잉크병을 어떻게 할까요?",
+            ]
+          : [
+              subtitle,
+              "시계탑의 그림자가 길게 늘어진 광장 한복판, 누군가 버리고 간 듯한 낡은 벤치 하나가 놓여 있습니다. 그곳에 검은 고양이 한 마리가 앉아 당신을 조용히 응시합니다. 그가 앞발을 핥으며 고개를 듭니다.",
+              "이내 작은 앞발이 벤치 위에 놓인 잉크병을 당신 쪽으로 툭 밀어 버리고는, 믿기 힘들게도 당신에게 말을 걸기 시작합니다.",
+              isRad
+                ? "“그 지독한 계산력이 마음에 든다. 자네는 혼돈을 혐오하지. 아니, 혼돈을 ‘정리’하고 싶어 해. 이 잉크병은 통제되지 않은 변수일 뿐이다. 이걸 어떻게 관리할 테지?”"
+                : "“상식의 댐을 지키던 자네의 인내심을 높이 평가한다. 세상이 아무리 비명을 질러도 자네는 평온을 택했지. 자, 여기 아주 위험한 잉크가 있도다. 자네의 평화를 위해 이 병을 어떻게 다룰 테지?”",
+              "이 잉크는 아직 아무것도 적지 않았지만, 동시에 모든 가능성을 품고 있습니다. 자, 이 잉크병을 어떻게 할까요?",
+            ];
 
-        let mStep = 0;
-        function stepM() {
-          display.innerText = mLines[mStep];
+        function showEnc() {
+          display.innerText = encounterLines[finalEncStep];
           container.innerHTML = "";
-          if (mStep < mLines.length - 1) {
+          if (finalEncStep < encounterLines.length - 1) {
             const btn = document.createElement("button");
             btn.className = "choice-btn next-btn";
             btn.innerText = "다음 [▶]";
             btn.onclick = () => {
               saveState();
-              mStep++;
-              stepM();
+              finalEncStep++;
+              showEnc();
             };
             container.appendChild(btn);
           } else {
             [
-              "➤ 나는 그저 내가 본 것을 믿을 뿐이다. (흔들림 없는 확신. 당신은 거울 속의 자신과 눈을 맞춘다.)",
-              "➤ 나는 무엇이 옳은지 여전히 모른다. 그저 발을 내디딜 뿐. (지독한 피로감. 당신은 거울 속의 자신으로부터 고개를 돌린다.)",
-            ].forEach((t) => {
+              {
+                t: "➤ 병을 열어 벤치 아래 흙바닥에 쏟아 버린다.",
+                res: isRec
+                  ? [
+                      "검은 액체는 차가운 흙 속으로 맥없이 잦아들어, 이내 흔적조차 남기지 않고 사라집니다. 쓰이지 못한 이야기는 누구도 다치게 할 수 없고, 바닥은 다시 아무 일도 없었다는 듯 평온한 색을 되찾았습니다. 당신은 방금, 태어나지 못한 수많은 진실에게 가장 고요한 무덤을 내어 준 셈입니다.",
+                      "???: 봐. 잉크가 자유를 찾았어. 쓰이지 못한 문장은 누구도 속일 수 없고, 쏟아진 잉크는 그저 흙으로 돌아갈 뿐이야. 넌 지금 이 도시의 복잡한 소음 하나를 영원히 잠재운 거야. 이제 네 앞의 길은 다시 아무것도 적히지 않은 백지처럼 고요해졌어. 적어도 누군가는 네가 그 혼돈을 끊어 냄으로써 이 밤을 무사히 넘겼다는 걸 기억하겠지.",
+                    ]
+                  : [
+                      "???: 정갈한 끝맺음이야. 하지만 통제되지 않는 것은 때로 더 큰 그리움이 되기도 하지. 지금은 잉크를 쏟아 바닥을 깨끗이 비웠지만, 그 자리에 남은 얼룩은 이제 너의 기록부 어디에도 남지 않는 유령이 되었어. 잠시야 평온해지겠지만, 가끔 비가 내리는 밤이면 흙 속으로 스며든 그 가능성들이 너의 꿈결을 검게 적실지도 모르지. 비워 낸 자리에 질서가 깃들길 바라겠어.",
+                      "당신은 관리 대신 침묵을 택했습니다. 하지만 기록되지 않은 것은 결코 잊히지 않고, 오직 당신의 직감 속에서만 예민하게 살아 움직일 것입니다. 당신은 깨끗한 바닥을 얻었으나, 대신 그 흙 밑에 무엇이 묻혀 있는지 아는 유일한 목격자가 되었습니다.",
+                    ],
+              },
+              {
+                t: "➤ 병을 꽉 잠근 채 코트 가장 깊은 주머니에 넣는다.",
+                res: isRec
+                  ? [
+                      "???: 결국 품기로 했군. 쏟아 버려 해방하기보다는, 스스로 그 무게를 견디는 길을 택했어. 하지만 기억해. 그 병이 주머니 속에서 흔들릴 때마다, 네가 삼킨 그 진실이 네 혈관을 타고 조용히 퍼져 나갈 거야. 넌 이제 안전한 관찰자가 아니라, 이 비밀과 함께 천천히 물들어 가는 당사자가 된 셈이지. 외투가 묵직해질 때마다, 네가 외면한 저 안개의 숨소리가 네 안에서 출렁일 거다.",
+                      "당신은 파괴를 유예했습니다. 하지만 가슴 속의 불꽃은 꺼지지 않았습니다. 그 불꽃은 당신의 품 안에서 은밀하게 타오르는 법을 배울 것 입니다.",
+                    ]
+                  : [
+                      "???: 효율적인 관리야. 쏟아진 잉크는 오염이지만, 병에 담긴 잉크는 자산이지. 넌 이 혼돈의 가능성을 네 몸 안으로 격리했어. 이제 이 도시의 평화는 네 주머니 속에 담긴 저 작은 병의 밀폐력에 달려 있지. 넌 스스로를 이 도시에서 가장 위태로운 보관함으로 만든 거야.",
+                      "당신은 이 무거운 잉크를 평생 짊어지고 걸어야 합니다. 병 안에서 잉크가 흔들리는 소리는 어느덧 당신의 심장박동과 기묘한 박자를 맞추기 시작합니다. 잉크병 하나만큼의 무게는 이제 당신의 보폭이자, 당신이 감당해야 할 유일한 비밀입니다. 당신은 이제 잉크가 적지 못한 수만 가지의 가능성을 품은 채, 아무도 읽지 못하는 당신만의 문장을 가슴 속에 품고 걷게 되었습니다.",
+                    ],
+              },
+            ].forEach((c) => {
               const btn = document.createElement("button");
               btn.className = "choice-btn";
-              btn.innerText = t;
+              btn.innerText = c.t;
               btn.onclick = () => {
                 saveState();
-                showEpilogue();
+                updateLog(`[선택] ${c.t.replace("➤ ", "").trim()}`);
+                currentResArray = c.res;
+                resTextIdx = 0;
+                isShowingResult = true;
+                renderFinalResultPage();
               };
               container.appendChild(btn);
             });
           }
         }
-        stepM();
+        showEnc();
       }
 
       function showEpilogue() {
@@ -937,22 +944,22 @@
         else convComment = "타협 없는 근본주의자";
 
         display.innerHTML = `
-    <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 15px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
-        <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 8px; letter-spacing: 2px;">
+    <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 30px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
+        <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin: 0 0 15px 0; text-align: center; border-bottom: 1px solid #444; padding: 0 0 15px 0; letter-spacing: 0;">
             [ 레치타티보의 순간: 최종 성향 진단서 ]
         </div>
-        <div style="margin-bottom: 8px; background-color: #1a1a1a !important; padding: 8px; border-left: 5px solid #a5d6a7 !important; text-align: center;">
+        <div style="margin-bottom: 15px; background-color: #1a1a1a !important; padding: 15px; border-left: 5px solid #a5d6a7 !important; text-align: center;">
             <div style="font-weight: bold; color: #a5d6a7 !important; font-size: 1.15em;">"${identity}"</div>
         </div>
         <div style="margin-bottom: 20px; font-size: 1em; line-height: 1.8; color: #ffffff !important;">
-            <span style="color: #999999 !important; font-weight: bold;">소속:</span> <span style="color: #ffffff !important;">${f}</span><br>
-            <span style="color: #999999 !important; font-weight: bold;">성향:</span> <span style="color: #ffffff !important;">${t}</span><br>
-            <span style="color: #999999 !important; font-weight: bold;">전향 가능성:</span> 
+            <span style="color: #dddddd !important; font-weight: bold;">소속:</span> <span style="color: #ffffff !important;">${f}</span><br>
+            <span style="color: #dddddd !important; font-weight: bold;">성향:</span> <span style="color: #ffffff !important;">${t}</span><br>
+            <span style="color: #dddddd !important; font-weight: bold;">전향 가능성:</span> 
             <span style="color: #a5d6a7 !important;">${convertibility}%</span> 
-            <span style="font-size: 0.85em; color: #777;">(${convComment})</span>
+            <span style="font-size: 0.85em; color: #dddddd !important;">(${convComment})</span>
         </div>
-        <div style="border-top: 1px solid #444; padding-top: 8px;">
-            <div style="font-weight: bold; margin-bottom: 8px; font-size: 0.9em; color: #999999 !important;">내재화된 생각의 파편들:</div>
+        <div style="border-top: 1px solid #444; padding-top: 15px;">
+            <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: #dddddd !important;">내재화된 생각의 파편들:</div>
             <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(
               " / "
             )}</div>
@@ -960,7 +967,7 @@
     </div>`;
 
         container.innerHTML = `
-            <button class="choice-btn next-btn" style="margin-top: 25px; background: #a5d6a7; color: #000; padding: 15px; font-size: 0.95em;" onclick="saveAsImage()">결과 이미지 저장 [↓]</button>
+            <button class="choice-btn next-btn" style="margin-top: 20px; background: #a5d6a7; color: #000; padding: 15px; font-size: 0.95em;" onclick="saveAsImage()">결과 이미지 저장 [↓]</button>
             <button class="choice-btn next-btn" style="margin-top: 10px; padding: 10px; font-size: 0.85em;" onclick="location.reload()">새로운 여정 시작</button>
         `;
       }
