@@ -106,6 +106,23 @@
         color: #888;
         border-color: #888;
       }
+      /* 🌟 추가된 입력창 스타일 */
+      .player-input-field {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: #1a1a1a;
+        border: 1px solid #444;
+        color: #fff;
+        font-family: inherit;
+        font-size: 1.05em;
+        outline: none;
+        transition: 0.3s;
+      }
+      .player-input-field:focus {
+        border-color: var(--accent);
+      }
       .thought-pause {
         color: var(--dim);
         font-style: italic;
@@ -426,14 +443,11 @@
         // 3. 현재 상태에 맞는 화면 다시 그리기
         if (currentIdx < scenario.length) {
           if (isShowingResult) {
-            // 결과창(res)을 보던 중이었다면 결과창 렌더링
             renderResultPage();
           } else {
-            // 일반 대사나 선택지 화면이었다면 일반 렌더링
             render();
           }
         } else {
-          // 4막 이후 상황이라면 4막 렌더링
           renderFinalEncounter();
         }
       }
@@ -459,24 +473,94 @@
         const display = document.getElementById("text-display");
         const container = document.getElementById("choice-container");
         container.innerHTML = "";
+        
         if (currentIdx < scenario.length) {
           const scene = scenario[currentIdx];
           header.innerText = scene.title;
+          
           if (!isShowingResult && textIdx < scene.lines.length) {
             let line = scene.lines[textIdx];
-            display.innerHTML = line.includes("*")
-              ? `<span class="thought-pause">${line}</span>`
-              : line;
-            const btn = document.createElement("button");
-            btn.className = "choice-btn next-btn";
-            btn.innerText = "다음 [▶]";
-            btn.onclick = () => {
-              if (window.getSelection().toString()) return;
-              saveState();
+            let originalLine = line;
+            let isThought = originalLine.includes("*");
+            let handled = false;
+            let isInputRequired = line.includes("*(플레이어 답변 확인)*");
+
+            const advanceLine = () => {
               textIdx++;
               render();
             };
-            container.appendChild(btn);
+
+            // 🌟 1) 텍스트 내부의 유사 선택지 처리
+            if (line.includes("➤")) {
+              const parts = line.split("➤");
+              let mainText = parts[0].replace("*(플레이어 답변 확인)*", "").trim();
+              display.innerHTML = (isThought && mainText) ? `<span class="thought-pause">${mainText}</span>` : mainText;
+
+              for (let i = 1; i < parts.length; i++) {
+                let choiceText = parts[i].replace("*(플레이어 답변 확인)*", "").trim();
+                const btn = document.createElement("button");
+                btn.className = "choice-btn";
+                btn.innerText = "➤ " + choiceText;
+                btn.onclick = () => {
+                  if (window.getSelection().toString()) return;
+                  saveState();
+                  updateLog(`[선택] ${choiceText}`);
+                  advanceLine();
+                };
+                container.appendChild(btn);
+              }
+              handled = true;
+            } 
+            // 🌟 2) 단독 입력창 처리
+            else if (isInputRequired) {
+              let mainText = line.replace("*(플레이어 답변 확인)*", "").trim();
+              display.innerHTML = (isThought && mainText) ? `<span class="thought-pause">${mainText}</span>` : mainText;
+
+              const inputField = document.createElement("input");
+              inputField.type = "text";
+              inputField.className = "player-input-field";
+              inputField.placeholder = "이곳에 당신의 답변을 입력하세요...";
+              
+              inputField.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  btn.click();
+                }
+              });
+
+              container.appendChild(inputField);
+
+              const btn = document.createElement("button");
+              btn.className = "choice-btn next-btn";
+              btn.innerText = "답변 기록 및 다음 [▶]";
+              btn.onclick = () => {
+                if (window.getSelection().toString()) return;
+                const answer = inputField.value.trim();
+                if (!answer) {
+                  alert("답변을 입력해주세요.");
+                  return;
+                }
+                saveState();
+                updateLog(`[답변] ${answer}`);
+                advanceLine();
+              };
+              container.appendChild(btn);
+              setTimeout(() => inputField.focus(), 10);
+              handled = true;
+            }
+
+            if (!handled) {
+              display.innerHTML = isThought ? `<span class="thought-pause">${line}</span>` : line;
+              const btn = document.createElement("button");
+              btn.className = "choice-btn next-btn";
+              btn.innerText = "다음 [▶]";
+              btn.onclick = () => {
+                if (window.getSelection().toString()) return;
+                saveState();
+                advanceLine();
+              };
+              container.appendChild(btn);
+            }
           } else if (!isShowingResult) {
             display.innerText = "당신의 결단을 기다립니다.";
             scene.choices.forEach((c) => {
@@ -510,31 +594,97 @@
         const container = document.getElementById("choice-container");
         container.innerHTML = "";
         let line = currentResArray[resTextIdx];
-        display.innerHTML = line.includes("*")
-          ? `<span class="thought-pause">${line}</span>`
-          : line;
-        const btn = document.createElement("button");
-        btn.className = "choice-btn next-btn";
-        if (resTextIdx < currentResArray.length - 1) {
-          btn.innerText = "다음 [▶]";
-          btn.onclick = () => {
-            saveState();
+        let originalLine = line;
+        let isThought = originalLine.includes("*");
+
+        const advanceRes = () => {
+          if (resTextIdx < currentResArray.length - 1) {
             resTextIdx++;
             renderResultPage();
-          };
-        } else {
-          btn.innerText = "장면 전환 [▶]";
-          btn.onclick = () => {
-            saveState();
+          } else {
             currentIdx++;
             textIdx = 0;
             resTextIdx = 0;
             finalEncStep = 0;
             isShowingResult = false;
             render();
+          }
+        };
+
+        let handled = false;
+        let isInputRequired = line.includes("*(플레이어 답변 확인)*");
+
+        // 🌟 1) 결과창 텍스트 내부의 유사 선택지 처리
+        if (line.includes("➤")) {
+          const parts = line.split("➤");
+          let mainText = parts[0].replace("*(플레이어 답변 확인)*", "").trim();
+          display.innerHTML = (isThought && mainText) ? `<span class="thought-pause">${mainText}</span>` : mainText;
+
+          for (let i = 1; i < parts.length; i++) {
+            let choiceText = parts[i].replace("*(플레이어 답변 확인)*", "").trim();
+            const btn = document.createElement("button");
+            btn.className = "choice-btn";
+            btn.innerText = "➤ " + choiceText;
+            btn.onclick = () => {
+              if (window.getSelection().toString()) return;
+              saveState();
+              updateLog(`[선택] ${choiceText}`);
+              advanceRes();
+            };
+            container.appendChild(btn);
+          }
+          handled = true;
+        } 
+        // 🌟 2) 결과창 내 단독 입력창 처리
+        else if (isInputRequired) {
+          let mainText = line.replace("*(플레이어 답변 확인)*", "").trim();
+          display.innerHTML = (isThought && mainText) ? `<span class="thought-pause">${mainText}</span>` : mainText;
+
+          const inputField = document.createElement("input");
+          inputField.type = "text";
+          inputField.className = "player-input-field";
+          inputField.placeholder = "이곳에 당신의 답변을 입력하세요...";
+          
+          inputField.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              btn.click();
+            }
+          });
+
+          container.appendChild(inputField);
+
+          const btn = document.createElement("button");
+          btn.className = "choice-btn next-btn";
+          btn.innerText = "답변 기록 및 다음 [▶]";
+          btn.onclick = () => {
+            if (window.getSelection().toString()) return;
+            const answer = inputField.value.trim();
+            if (!answer) {
+              alert("답변을 입력해주세요.");
+              return;
+            }
+            saveState();
+            updateLog(`[답변] ${answer}`);
+            advanceRes();
           };
+          container.appendChild(btn);
+          setTimeout(() => inputField.focus(), 10);
+          handled = true;
         }
-        container.appendChild(btn);
+
+        if (!handled) {
+          display.innerHTML = isThought ? `<span class="thought-pause">${line}</span>` : line;
+          const btn = document.createElement("button");
+          btn.className = "choice-btn next-btn";
+          btn.innerText = (resTextIdx < currentResArray.length - 1) ? "다음 [▶]" : "장면 전환 [▶]";
+          btn.onclick = () => {
+            if (window.getSelection().toString()) return;
+            saveState();
+            advanceRes();
+          };
+          container.appendChild(btn);
+        }
       }
 
       function renderFinalEncounter() {
@@ -684,7 +834,7 @@
             btn.className = "choice-btn next-btn";
             btn.innerText = "다음 [▶]";
             btn.onclick = () => {
-              saveState(); // 거울의 다음 대사로 가기 전 저장!
+              saveState();
               mStep++;
               stepM();
             };
@@ -757,7 +907,7 @@
         else if (stats.mod > stats.rad) t = "온건적";
         else t = "판단 보류(균형)";
 
-        // 2. 정체성 매트릭스 (기존 로직 유지)
+        // 2. 정체성 매트릭스
         if (f === "재건의 손") {
           if (t === "급진적") identity = "파괴를 통한 정화의 집행관";
           else if (t === "온건적") identity = "침묵하는 진실의 증언자";
@@ -773,7 +923,6 @@
         }
 
         // 3. 전향 가능성 지수 산출
-        // 최대 발생 가능 점수 차이는 7점
         const maxMargin = 7;
         const currentMargin = Math.abs(stats.rec - stats.pav);
         const convertibility = Math.floor(
@@ -788,11 +937,11 @@
         else convComment = "타협 없는 근본주의자";
 
         display.innerHTML = `
-    <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 30px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
-        <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 15px; letter-spacing: 2px;">
+    <div id="final-report-area" class="fade-in" style="border: 2px solid #ffffff !important; padding: 15px; background-color: #0a0a0a !important; color: #ffffff !important; font-family: 'Nanum Myeongjo', serif; max-width: 480px; margin: 0 auto; box-sizing: border-box;">
+        <div style="color: #ffffff !important; font-size: 1.2em; font-weight: bold; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 8px; letter-spacing: 2px;">
             [ 레치타티보의 순간: 최종 성향 진단서 ]
         </div>
-        <div style="margin-bottom: 15px; background-color: #1a1a1a !important; padding: 15px; border-left: 5px solid #a5d6a7 !important; text-align: center;">
+        <div style="margin-bottom: 8px; background-color: #1a1a1a !important; padding: 8px; border-left: 5px solid #a5d6a7 !important; text-align: center;">
             <div style="font-weight: bold; color: #a5d6a7 !important; font-size: 1.15em;">"${identity}"</div>
         </div>
         <div style="margin-bottom: 20px; font-size: 1em; line-height: 1.8; color: #ffffff !important;">
@@ -802,8 +951,8 @@
             <span style="color: #a5d6a7 !important;">${convertibility}%</span> 
             <span style="font-size: 0.85em; color: #777;">(${convComment})</span>
         </div>
-        <div style="border-top: 1px solid #444; padding-top: 15px;">
-            <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em; color: #999999 !important;">내재화된 생각의 파편들:</div>
+        <div style="border-top: 1px solid #444; padding-top: 8px;">
+            <div style="font-weight: bold; margin-bottom: 8px; font-size: 0.9em; color: #999999 !important;">내재화된 생각의 파편들:</div>
             <div style="color: #ffffff !important; font-size: 0.85em; font-style: italic; line-height: 1.7; word-break: keep-all;">${stats.logHistory.join(
               " / "
             )}</div>
@@ -811,7 +960,7 @@
     </div>`;
 
         container.innerHTML = `
-            <button class="choice-btn next-btn" style="margin-top: 20px; background: #a5d6a7; color: #000; padding: 15px; font-size: 0.95em;" onclick="saveAsImage()">결과 이미지 저장 [↓]</button>
+            <button class="choice-btn next-btn" style="margin-top: 25px; background: #a5d6a7; color: #000; padding: 15px; font-size: 0.95em;" onclick="saveAsImage()">결과 이미지 저장 [↓]</button>
             <button class="choice-btn next-btn" style="margin-top: 10px; padding: 10px; font-size: 0.85em;" onclick="location.reload()">새로운 여정 시작</button>
         `;
       }
